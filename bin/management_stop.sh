@@ -16,4 +16,4 @@ function kill_proc()
 
 echo ""
 
-kill_proc api_gw.py
+kill_proc user_management.py

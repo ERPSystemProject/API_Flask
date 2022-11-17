@@ -1,7 +1,7 @@
 DB:
   mysql:
     database: erpsystem
-    host: erpsystem-1.cc9d4uudotkz.ap-northeast-2.rds.amazonaws.com
+    host: localhost
     password: erp123456789!
     port: 3306
     user: admin
@@ -10,6 +10,9 @@ LOG:
   filepath: ../log/
   level: INFO
   format: "%(asctime)s %(levelname)s - %(message)s"
-PROCESS:
+api_gw:
   ip: 172.31.9.78
   port: 18001
+user_management:
+  ip: 127.0.0.1
+  port: 18002

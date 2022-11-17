@@ -19,27 +19,28 @@ import json
 import yaml
 from multiprocessing import Process
 
+import user_resource
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
 api = Api(app=flask_app,
           version='0.1',
           title='ERP System API Server',
-
           description='ERP System API List Description',
-
           terms_url='/ERPSystem/v1.0',
           contact='tjwnsgh34@gmail.com',
           license='MIT')
 flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 
+api.add_namespace(user_resource.user_ns, path='/ERPSystem/v1.0/users')
+
 def setup_api_server():
     try:
         # config 파일 읽기
-        f = open('../config/api_gw.yaml')
+        f = open('../config/config.yaml')
         config = yaml.load(f, Loader=yaml.FullLoader)
         f.close()
-        process_config = config['PROCESS']
+        process_config = config['api_gw']
         log_config = config['LOG']
 
         #LogWriter 설정
