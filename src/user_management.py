@@ -66,18 +66,18 @@ def userLogin():
         password_row = mysql_cursor.fetchone()
 
         if not password_row:
-            send_data = {"message": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
+            send_data = {"result": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
             status_code = status.HTTP_401_UNAUTHORIZED
             return flask.make_response(flask.jsonify(send_data), status_code)
         if user_password != password_row[0]:
-            send_data = {"message": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
+            send_data = {"result": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
             status_code = status.HTTP_401_UNAUTHORIZED
             return flask.make_response(flask.jsonify(send_data), status_code)
         query = f"SELECT community_board_flag, goods_management_flag, consignment_management_flag, move_management_flag, sell_managemant_flag, remain_management_flag, sale_management_flag, system_management_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
         mysql_cursor.execute(query)
         authority_row = mysql_cursor.fetchone()
         if not authority_row:
-            send_data = {"message": "권한을 가져오는데 실패했습니다. 관리자에게 문의하세요."}
+            send_data = {"result": "권한을 가져오는데 실패했습니다. 관리자에게 문의하세요."}
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             return flask.make_response(flask.jsonify(send_data), status_code)
         send_data['result'] = "SUCCESS"
@@ -93,7 +93,7 @@ def userLogin():
         send_data['authority']['user_authority_management_flag'] = authority_row[8]
 
     except Exception as e:
-        send_data = {"message": f"Error : {e}"}
+        send_data = {"result": f"Error : {e}"}
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     finally:
         return flask.make_response(flask.jsonify(send_data), status_code)
