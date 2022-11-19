@@ -17,3 +17,4 @@ function kill_proc()
 echo ""
 
 kill_proc user_management.py
+kill_proc community_management.py

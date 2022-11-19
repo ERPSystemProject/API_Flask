@@ -20,6 +20,7 @@ import yaml
 from multiprocessing import Process
 
 import user_resource
+import community_resource
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
@@ -33,6 +34,7 @@ api = Api(app=flask_app,
 flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 
 api.add_namespace(user_resource.user_ns, path='/ERPSystem/v1.0/users')
+api.add_namespace(community_resource.community_ns, path='/ERPSystem/v1.0/community')
 
 def setup_api_server():
     try:
@@ -44,7 +46,7 @@ def setup_api_server():
         log_config = config['LOG']
 
         #LogWriter 설정
-        log_filename = log_config['filepath'] + log_config['filename']
+        log_filename = log_config['filepath'] + "api_gw.log"
         log_format = log_config['format']
         log_level = log_config['level']
         if log_level == 'CRITICAL':

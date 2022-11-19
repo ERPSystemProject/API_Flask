@@ -6,13 +6,15 @@ DB:
     port: 3306
     user: admin
 LOG:
-  filename: api_gw.log
   filepath: ../log/
   level: INFO
   format: "%(asctime)s %(levelname)s - %(message)s"
 api_gw:
-  ip: 172.31.9.78
+  ip: 172.31.34.56
   port: 18001
 user_management:
   ip: 127.0.0.1
   port: 18002
+community_management:
+  ip: 127.0.0.1
+  port: 18003

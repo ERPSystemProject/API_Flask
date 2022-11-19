@@ -5,3 +5,9 @@ nohup python3 -u ../src/user_management.py &
 echo "---------------------------------------------"
 ps -ef | grep user_management | grep -v grep
 echo "---------------------------------------------"
+
+echo "community_management 시작"
+nohup python3 -u ../src/community_management.py &
+echo "---------------------------------------------"
+ps -ef | grep community_management | grep -v grep
+echo "---------------------------------------------"

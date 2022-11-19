@@ -52,7 +52,7 @@ def load_config():
 @app.route('/login', methods=['POST'])
 def userLogin():
     send_data = dict()
-    status_code = status.HTTP_200_OK
+    status_code = status.HTTP_201_CREATED
     mysql_cursor, connect_code = connect_mysql()
     if not connect_code == status.HTTP_200_OK:
         return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
@@ -112,7 +112,7 @@ def setup_api_server():
         db_config = config['DB']['mysql']
 
         #LogWriter 설정
-        log_filename = log_config['filepath']+log_config['filename']
+        log_filename = log_config['filepath']+"user_management.log"
         log_format = log_config['format']
         log_level = log_config['level']
         if log_level == 'CRITICAL':

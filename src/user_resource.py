@@ -45,8 +45,8 @@ management_url = apiconfig['ip'] + ':' + str(apiconfig['port'])
 class login(Resource):
 
     @user_ns.doc(body=user_login_request_fields)
-    @user_ns.response(200, 'OK', user_login_response_fields)
-    @user_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @user_ns.response(201, 'OK', user_login_response_fields)
+    @user_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def post(self):
         '''
         로그인 요청
