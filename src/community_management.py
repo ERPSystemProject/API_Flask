@@ -485,6 +485,112 @@ def boardDetailApis(boardIndex):
         finally:
             return flask.make_response(flask.jsonify(send_data), status_code)
 
+
+#댓글 등록
+@app.route('/<int:boardIndex>/comment', methods=['POST'])
+def postComment(boardIndex):
+    send_data = dict()
+    status_code = status.HTTP_201_CREATED
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    query = f"SELECT * FROM community_board WHERE community_board.index = {boardIndex};"
+    mysql_cursor.execute(query)
+    board_row = mysql_cursor.fetchone()
+    if not board_row:
+        send_data = {"result": "해당 게시물 번호는 존재하지 않습니다."}
+        status_code = status.HTTP_404_NOT_FOUND
+        return flask.make_response(flask.jsonify(send_data), status_code)
+    
+    try:
+        request_body = json.loads(request.get_data())
+        if not 'content' in request_body:
+            send_data = {"result": "댓글 내용이 입력되지 않았습니다."}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return flask.make_response(flask.jsonify(send_data), status_code)
+        if not 'userId' in request_body:
+            send_data = {"result": "댓긓 등록자 ID가 입력되지 않았습니다."}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return flask.make_response(flask.jsonify(send_data), status_code)
+        content = request_body['content']
+        userId = request_body['userId']
+
+        query = f"INSERT INTO community_board_comment (community_board_comment.index, content, user_id, register_date) VALUES ({boardIndex}, '{content}', '{userId}', CURRENT_TIMESTAMP);"
+        mysql_cursor.execute(query)
+
+        query = f"SELECT MAX(comment_index) FROM community_board_comment WHERE community_board_comment.index = {boardIndex};"
+        mysql_cursor.execute(query)
+        comment_index_row = mysql_cursor.fetchone()
+        commentIndex = comment_index_row[0]
+
+        send_data['result'] = 'SUCCESS'
+        send_data['boardIndex'] = boardIndex
+        send_data['commentIndex'] = commentIndex
+    except Exception as e:
+        send_data = {"result": f"Error : {traceback.format_exc()}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#댓글 수정, 삭제
+@app.route('/<int:boardIndex>/comment/<int:commentIndex>', methods=['PUT','DELETE'])
+def commentDetailApis(boardIndex,commentIndex):
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+    
+    query = f"SELECT * FROM community_board_comment WHERE community_board_comment.index = {boardIndex} and comment_index = {commentIndex};"
+    mysql_cursor.execute(query)
+    board_row = mysql_cursor.fetchone()
+    if not board_row:
+        send_data = {"result": "해당 댓글 번호는 존재하지 않습니다."}
+        status_code = status.HTTP_404_NOT_FOUND
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+    if flask.request.method == 'PUT':
+        send_data = dict()
+        status_code = status.HTTP_200_OK
+        try:
+            request_body = json.loads(request.get_data())
+            if not 'content' in request_body:
+                send_data = {"result": "댓글 내용이 입력되지 않았습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
+            if not 'userId' in request_body:
+                send_data = {"result": "댓긓 등록자 ID가 입력되지 않았습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
+            content = request_body['content']
+            userId = request_body['userId']
+
+            query = f"UPDATE community_board_comment SET content = '{content}', user_id = '{userId}', register_date = CURRENT_TIMESTAMP WHERE community_board_comment.index = {boardIndex} and comment_index = {commentIndex};"
+            mysql_cursor.execute(query)
+
+            send_data['result'] = 'SUCCESS'
+            send_data['boardIndex'] = boardIndex
+            send_data['commentIndex'] = commentIndex
+
+        except Exception as e:
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
+    elif flask.request.method == 'DELETE':
+        send_data = dict()
+        status_code = status.HTTP_204_NO_CONTENT
+        try:
+
+            query = f"DELETE FROM community_board_comment WHERE community_board_comment.index = {boardIndex} and comment_index = {commentIndex};"
+            mysql_cursor.execute(query)
+
+        except Exception as e:
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
 def setup_api_server():
 
     global logWriter, db_config

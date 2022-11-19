@@ -220,7 +220,7 @@ class communityBoardCommentApiList(Resource):
         return result, res.status_code
 
     @community_ns.doc(responses={204: 'OK'})
-    def delete(self,boardIndex):
+    def delete(self,boardIndex,commentIndex):
         '''
         댓글 삭제
         '''
