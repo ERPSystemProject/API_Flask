@@ -26,7 +26,7 @@ request_query_parser.add_argument('searchContent', type=str, help='검색내용'
 request_query_parser.add_argument('boardType', type=int, help='게시물종류 0: 전체, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청')
 
 upload_parser = reqparse.RequestParser()
-upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, action='append', help='파일 업로드')
+upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='파일 업로드')
 
 board_list_fields = community_ns.model('게시물 리스트 내용', {
     'boardIndex':fields.Integer(description='번호', required=True, example=1),
@@ -83,7 +83,8 @@ comment_fields = community_ns.model('댓글 fields', {
 })
 
 file_fields = community_ns.model('피알 fields', {
-    'filePath':fields.String(description='파일 경로',required=True,example='/path/to/file')
+    'fileName':fields.String(description='파일 이름',required=True,example='test.txt'),
+    'fileUrl':fields.String(description='파일 다운로드 url',required=True,example='http://52.79.206.187:19999/community_board/1/test.txt')
 })
 
 get_board_detail_fields = community_ns.model('게시판 상세 조회', {
@@ -239,18 +240,26 @@ class communityBoardCommentApiList(Resource):
         '''
         게시물 파일 등록
         '''
-        args = upload_parser.parse_args()
-        fileList = args['files']
-        res = requests.post(f"http://{management_url}/{boardIndex}/file", files=fileList, timeout=3)
+        files = flask.request.files
+        file_list = list()
+        upload_files = flask.request.files.getlist("files")
+        for upload_file in upload_files:
+            filename = upload_file.filename
+            file_ = upload_file.read()
+            type_ = upload_file.content_type
+            file_list.append(('files',(filename,file_,type_)))
+        res = requests.post(f"http://{management_url}/{boardIndex}/file", files=file_list, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
+@community_ns.route('/<int:boardIndex>/file/<string:fileName>')
+class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
-    def delete(self,boardIndex):
+    def delete(self,boardIndex,fileName):
         '''
         게시물 파일 삭제
         '''
-        res = requests.delete(f"http://{management_url}/{boardIndex}/file", timeout=3)
+        res = requests.delete(f"http://{management_url}/{boardIndex}/file/{fileName}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
         result = json.loads(res.text)

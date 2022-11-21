@@ -392,11 +392,13 @@ def boardDetailApis(boardIndex):
             data['comments'] = comments
             
             fileDir = f"/home/ubuntu/data/community_board/{boardIndex}"
+            fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
             files = os.listdir(fileDir)
             fileList = list()
             for filename in files:
                 file_data = dict()
-                file_data['filePath'] = fileDir + '/' + filename
+                file_data['fileName'] = filename
+                file_data['fileUrl'] = fileUrl + filename
                 fileList.append(file_data)
             data['fileList'] = fileList
 
@@ -485,6 +487,73 @@ def boardDetailApis(boardIndex):
         finally:
             return flask.make_response(flask.jsonify(send_data), status_code)
 
+#게시물 파일 등록
+@app.route('/<int:boardIndex>/file', methods=['POST'])
+def boardPostFileApis(boardIndex):
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+    
+    query = f"SELECT * FROM community_board WHERE community_board.index = {boardIndex};"
+    mysql_cursor.execute(query)
+    board_row = mysql_cursor.fetchone()
+    if not board_row:
+        send_data = {"result": "해당 게시물 번호는 존재하지 않습니다."}
+        status_code = status.HTTP_404_NOT_FOUND
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+    if flask.request.method == 'POST':
+        send_data = dict()
+        status_code = status.HTTP_201_CREATED
+        try:
+            file = flask.request.files['files']
+            filePath = f"/home/ubuntu/data/community_board/{boardIndex}/"
+            fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
+            file.save(filePath+file.filename)
+            send_data['result'] = 'SUCCESS'
+            send_data['filePath'] = filePath+file.filename
+            send_data['fileUrl'] = fileUrl+file.filename
+            
+        except Exception as e:
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
+#게시물 파일 삭제
+@app.route('/<int:boardIndex>/file/<string:fileName>', methods=['DELETE'])
+def boardDeleteFileApis(boardIndex,fileName):
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+    
+    query = f"SELECT * FROM community_board WHERE community_board.index = {boardIndex};"
+    mysql_cursor.execute(query)
+    board_row = mysql_cursor.fetchone()
+    if not board_row:
+        send_data = {"result": "해당 게시물 번호는 존재하지 않습니다."}
+        status_code = status.HTTP_404_NOT_FOUND
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+    if flask.request.method == 'DELETE':
+        send_data = dict()
+        status_code = status.HTTP_204_NO_CONTENT
+        try:
+
+            dir_path = f"/home/ubuntu/data/community_board/{boardIndex}/"
+            file_path = dir_path+fileName
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+            else:
+                send_data = {"result": f"해당 게시물에는 {fileName} 이라는 파일이 존재하지 않습니다."}
+                status_code = status.HTTP_404_NOT_FOUND
+                return flask.make_response(flask.jsonify(send_data), status_code)
+
+        except Exception as e:
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
 
 #댓글 등록
 @app.route('/<int:boardIndex>/comment', methods=['POST'])
