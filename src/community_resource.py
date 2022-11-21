@@ -13,88 +13,90 @@ import yaml
 community_ns = Namespace('Community', version="1.0", title='Community API List', description='Community API List')
 
 notice_query_parser = reqparse.RequestParser()
-notice_query_parser.add_argument('limit', type=int, required=True, default=15, help='한 페이지당 몇개의 게시물')
-notice_query_parser.add_argument('page', type=int, required=True, default=1, help='현재 페이지')
-notice_query_parser.add_argument('searchType', type=int, help='검색기준 | 0: 제목, 1: 내용, 2: 작성자 ID, 3: 작성자 이름')
-notice_query_parser.add_argument('searchContent', type=str, help='검색내용')
+notice_query_parser.add_argument('limit', type=int, required=True, default=15, help='limit')
+notice_query_parser.add_argument('page', type=int, required=True, default=1, help='current page')
+notice_query_parser.add_argument('searchType', type=int, help='searchType | 0: title, 1: content, 2: writer ID, 3: writer name')
+notice_query_parser.add_argument('searchContent', type=str, help='searchContent')
 
 request_query_parser = reqparse.RequestParser()
-request_query_parser.add_argument('limit', type=int, required=True, default=15, help='한 페이지당 몇개의 게시물')
-request_query_parser.add_argument('page', type=int, required=True, default=1, help='현재 페이지')
-request_query_parser.add_argument('searchType', type=int, help='검색기준 | 0: 제목, 1: 내용, 2: 작성자 ID, 3: 작성자 이름')
-request_query_parser.add_argument('searchContent', type=str, help='검색내용')
-request_query_parser.add_argument('boardType', type=int, help='게시물종류 0: 전체, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청')
+request_query_parser.add_argument('limit', type=int, required=True, default=15, help='limit')
+request_query_parser.add_argument('page', type=int, required=True, default=1, help='current page')
+request_query_parser.add_argument('searchType', type=int, help='searchType | 0: title, 1: content, 2: writer ID, 3: writer name')
+request_query_parser.add_argument('searchContent', type=str, help='searchContent')
+request_query_parser.add_argument('boardType', type=int, help='boardType 0: all, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request')
 
 upload_parser = reqparse.RequestParser()
-upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='파일 업로드')
+upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload')
 
-board_list_fields = community_ns.model('게시물 리스트 내용', {
-    'boardIndex':fields.Integer(description='번호', required=True, example=1),
-    'targetOffices':fields.List(fields.String(description='대상 영업소', required=True, example='전체')),
-    'boardType':fields.String(description='게시물 분류', required=True, example='공지사항'),
-    'title':fields.String(description='제목', required=True, example='테스트'),
-    'commentCount':fields.Integer(description='댓글수',required=True,example=0),
-    'writeOffice':fields.String(description='작성영업소',required=True,example='작성영업소'),
-    'writer':fields.String(description='작성자이름',required=True,example='관리자'),
-    'registerDate':fields.String(description='작성일',required=True,example='2022-01-01 12:00'),
-    'viewCount':fields.Integer(description='조회수',required=True,example=0)
+board_list_fields = community_ns.model('board list fields', {
+    'boardIndex':fields.Integer(description='id', required=True, example=1),
+    'targetOffices':fields.List(fields.String(description='target Offices', required=True, example='all')),
+    'boardType':fields.String(description='board Type', required=True, example='notice'),
+    'title':fields.String(description='title', required=True, example='title'),
+    'commentCount':fields.Integer(description='comment Count',required=True,example=0),
+    'writeOffice':fields.String(description='write Office',required=True,example='write Office'),
+    'writer':fields.String(description='writer name',required=True,example='writer'),
+    'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00'),
+    'viewCount':fields.Integer(description='viewCount',required=True,example=0)
 })
 
-notice_list_response_fields = community_ns.model('공지사항 리스트 조회', {
-    'result':fields.String(description="리스트 조회 결과", required=True, example='SUCCESS'),
-    'list':fields.List(fields.Nested(board_list_fields))
+notice_list_response_fields = community_ns.model('notice list response', {
+    'result':fields.String(description="result", required=True, example='SUCCESS'),
+    'list':fields.List(fields.Nested(board_list_fields)),
+    'totalPage':fields.Integer(description="totalPage", required=True, example=10)
 })
 
-request_list_response_fields = community_ns.model('요청사항 리스트 조회', {
-    'result':fields.String(description='리스트 조회 결과', required=True, example='SUCCESS'),
-    'list':fields.List(fields.Nested(board_list_fields))
+request_list_response_fields = community_ns.model('request list response', {
+    'result':fields.String(description='result', required=True, example='SUCCESS'),
+    'list':fields.List(fields.Nested(board_list_fields)),
+    'totalPage':fields.Integer(description="totalPage", required=True, example=10)
 })
 
-post_board_request_fields = community_ns.model('게시판 작성 request', {
-    'offices':fields.List(fields.Integer(description='대상 영업소 ID | 0: 전체', required=True, example=0)),
-    'boardType':fields.Integer(description='게시물 분류 | 0: 공지사항, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청', required=True, example=0),
-    'title':fields.String(description='제목', required=True, example='테스트'),
-    'content':fields.String(description='내용',required=True,example='내용'),
-    'userId':fields.String(description='사용자 ID',required=True,example='admin')
+post_board_request_fields = community_ns.model('post board request', {
+    'offices':fields.List(fields.Integer(description='target offices ID | 0: all', required=True, example=0)),
+    'boardType':fields.Integer(description='board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request', required=True, example=0),
+    'title':fields.String(description='title', required=True, example='title'),
+    'content':fields.String(description='content',required=True,example='content'),
+    'userId':fields.String(description='writer ID',required=True,example='admin')
 })
 
-post_board_response_fields = community_ns.model('게시판 작성 response', {
-    'result':fields.String(description='결과',required=True,example='SUCCESS'),
-    'boardIndex':fields.Integer(description='게시판 번호', required=True, example='1')
+post_board_response_fields = community_ns.model('post board response', {
+    'result':fields.String(description='result',required=True,example='SUCCESS'),
+    'boardIndex':fields.Integer(description='board Index', required=True, example='1')
 })
 
-comment_request_fields = community_ns.model('댓글 관리 요청 fields', {
-    'content':fields.String(description='내용',required=True,example='내용'),
-    'userId':fields.String(description='사용자 ID',required=True,example='admin')
+comment_request_fields = community_ns.model('comment request fields', {
+    'content':fields.String(description='content',required=True,example='content'),
+    'userId':fields.String(description='user ID',required=True,example='admin')
 })
 
-comment_response_fields = community_ns.model('댓글 관리 결과 fields', {
-    'result':fields.String(description='결과',required=True,example='SUCCESS'),
-    'boardIndex':fields.Integer(description='게시판 번호', required=True, example='1'),
-    'commentIndex':fields.Integer(description='댓글 번호', required=True, example='1')
+comment_response_fields = community_ns.model('comment response fields', {
+    'result':fields.String(description='result',required=True,example='SUCCESS'),
+    'boardIndex':fields.Integer(description='boardIndex', required=True, example=1),
+    'commentIndex':fields.Integer(description='commentIndex', required=True, example=1)
 })
 
-comment_fields = community_ns.model('댓글 fields', {
-    'commentIndex':fields.Integer(description='댓글 번호',required=True,example=1),
-    'writeOffice':fields.String(description='작성영업소',required=True,example='작성영업소'),
-    'writer':fields.String(description='작성자이름',required=True,example='관리자'),
-    'content':fields.String(description='내용',required=True,example='내용'),
-    'registerDate':fields.String(description='작성일',required=True,example='2022-01-01 12:00')
+comment_fields = community_ns.model('comment fields', {
+    'commentIndex':fields.Integer(description='commentIndex',required=True,example=1),
+    'writeOffice':fields.String(description='writeOffice',required=True,example='writeOffice'),
+    'writer':fields.String(description='writer',required=True,example='writer'),
+    'content':fields.String(description='content',required=True,example='content'),
+    'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00')
 })
 
-file_fields = community_ns.model('피알 fields', {
-    'fileName':fields.String(description='파일 이름',required=True,example='test.txt'),
-    'fileUrl':fields.String(description='파일 다운로드 url',required=True,example='http://52.79.206.187:19999/community_board/1/test.txt')
+file_fields = community_ns.model('file fields', {
+    'fileName':fields.String(description='fileName',required=True,example='test.txt'),
+    'fileUrl':fields.String(description='fileUrl',required=True,example='http://52.79.206.187:19999/community_board/1/test.txt')
 })
 
-get_board_detail_fields = community_ns.model('게시판 상세 조회', {
-    'targetOffices':fields.List(fields.Integer(description='대상 영업소 ID | 0: 전체', required=True, example=0)),
-    'boardType':fields.Integer(description='게시물 분류 | 0: 공지사항, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청', required=True, example=0),
-    'title':fields.String(description='제목', required=True, example='테스트'),
-    'content':fields.String(description='내용',required=True,example='내용'),
-    'writeOffice':fields.String(description='작성영업소',required=True,example='작성영업소'),
-    'writer':fields.String(description='작성자이름',required=True,example='관리자'),
-    'registerDate':fields.String(description='작성일',required=True,example='2022-01-01 12:00'),
+get_board_detail_fields = community_ns.model('board detail fields', {
+    'targetOffices':fields.List(fields.Integer(description='targetOffices ID | 0: all', required=True, example=0)),
+    'boardType':fields.Integer(description='board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request', required=True, example=0),
+    'title':fields.String(description='title', required=True, example='title'),
+    'content':fields.String(description='content',required=True,example='content'),
+    'writeOffice':fields.String(description='writeOffice',required=True,example='writeOffice'),
+    'writer':fields.String(description='writer',required=True,example='writer'),
+    'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00'),
     'comments':fields.List(fields.Nested(comment_fields)),
     'fileList':fields.List(fields.Nested(file_fields))
 })
@@ -115,7 +117,7 @@ class noticeApiList(Resource):
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def get(self):
         '''
-        공지사항 리스트 조회
+        get notice list 
         '''
         args = notice_query_parser.parse_args()
         res = requests.get(f"http://{management_url}/notice", params=args, timeout=3)
@@ -130,7 +132,7 @@ class requestApiList(Resource):
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def get(self):
         '''
-        요청사항 리스트 조회
+        get request list
         '''
         args = request_query_parser.parse_args()
         res = requests.get(f"http://{management_url}/request", params=args, timeout=3)
@@ -145,8 +147,8 @@ class communityApiList(Resource):
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def post(self):
         '''
-        게시물 작성
-        boardType | 0: 공지사항, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청
+        post board
+        board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/", data=json.dumps(request_body), timeout=3)
@@ -159,8 +161,8 @@ class communityBoardApiList(Resource):
     @community_ns.response(200, 'OK', get_board_detail_fields)
     def get(self,boardIndex):
         '''
-        게시물 상세 조회
-        boardType | 0: 공지사항, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청
+        get board detail
+        board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
         res = requests.get(f"http://{management_url}/{boardIndex}", timeout=3)
         result = json.loads(res.text)
@@ -171,8 +173,8 @@ class communityBoardApiList(Resource):
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def put(self,boardIndex):
         '''
-        게시물 수정
-        boardType | 0: 공지사항, 1: 상품등록, 2: 교환요청, 3: 문의사항, 4: 배송요청, 5: 회수요청, 6: 홀딩요청, 7: ERP수정, 8: 기타, 9: 구매팀요청
+        adjust board
+        board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/{boardIndex}", data=json.dumps(request_body), timeout=3)
@@ -182,7 +184,7 @@ class communityBoardApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
     def delete(self,boardIndex):
         '''
-        게시물 삭제
+        delete board
         '''
         res = requests.delete(f"http://{management_url}/{boardIndex}", timeout=3)
         if res.status_code == 204:
@@ -198,7 +200,7 @@ class communityBoardCommentPostApiList(Resource):
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def post(self,boardIndex):
         '''
-        댓글 등록
+        post comment
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/{boardIndex}/comment", data=json.dumps(request_body), timeout=3)
@@ -213,7 +215,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def put(self,boardIndex,commentIndex):
         '''
-        댓글 수정
+        adjust comment
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/{boardIndex}/comment/{commentIndex}", data=json.dumps(request_body), timeout=3)
@@ -223,7 +225,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
     def delete(self,boardIndex,commentIndex):
         '''
-        댓글 삭제
+        delete comment
         '''
         res = requests.delete(f"http://{management_url}/{boardIndex}/comment/{commentIndex}", timeout=3)
         if res.status_code == 204:
@@ -238,7 +240,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     def post(self,boardIndex):
         '''
-        게시물 파일 등록
+        post file of board
         '''
         files = flask.request.files
         file_list = list()
@@ -257,7 +259,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
     def delete(self,boardIndex,fileName):
         '''
-        게시물 파일 삭제
+        delete file of board
         '''
         res = requests.delete(f"http://{management_url}/{boardIndex}/file/{fileName}", timeout=3)
         if res.status_code == 204:

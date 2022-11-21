@@ -21,6 +21,7 @@ from multiprocessing import Process
 
 import user_resource
 import community_resource
+import system_resource
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
@@ -35,6 +36,7 @@ flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 
 api.add_namespace(user_resource.user_ns, path='/ERPSystem/v1.0/users')
 api.add_namespace(community_resource.community_ns, path='/ERPSystem/v1.0/community')
+api.add_namespace(system_resource.system_ns, path='/ERPSystem/v1.0/system')
 
 def setup_api_server():
     try:

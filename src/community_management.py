@@ -144,6 +144,7 @@ def getNoticeBoards():
         page = params['page']
         start = (int(page)-1) * int(limit)
 
+        limit_query = f" limit {start}, {limit};"
         condition_query = f" limit {start}, {limit};"
         
         if 'searchType' in params and 'searchContent' in params:
@@ -199,8 +200,14 @@ def getNoticeBoards():
             
             boardList.append(data)
 
+        query = f"SELECT count(*) FROM community_board" + condition_query.replace(limit_query, ";")
+        mysql_cursor.execute(query)
+        count_row = mysql_cursor.fetchone()
+
         send_data['result'] = "SUCCESS"
         send_data['list'] = boardList
+        send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
+
 
     except Exception as e:
         send_data = {"result": f"Error : {traceback.format_exc()}"}
@@ -232,6 +239,7 @@ def getRequestBoards():
         page = params['page']
         start = (int(page)-1) * int(limit)
 
+        limit_query = f" limit {start}, {limit};"
         condition_query = f" limit {start}, {limit};"
 
         if 'boardType' in params:
@@ -319,8 +327,13 @@ def getRequestBoards():
 
             boardList.append(data)
 
+        query = f"SELECT count(*) FROM community_board" + condition_query.replace(limit_query, ";")
+        mysql_cursor.execute(query)
+        count_row = mysql_cursor.fetchone()
+
         send_data['result'] = "SUCCESS"
         send_data['list'] = boardList
+        send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
 
     except Exception as e:
         send_data = {"result": f"Error : {traceback.format_exc()}"}
