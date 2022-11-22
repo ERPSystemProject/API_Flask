@@ -91,7 +91,10 @@ def postBoard():
 
         if 0 in offices:
             offices = [0]
-        
+
+        query = f"INSERT INTO community_board(type, title, content, user_id, register_date) VALUES({boardType},'{title}','{content}','{userId}',CURRENT_TIMESTAMP);"
+        mysql_cursor.execute(query)
+
         query = f"SELECT MAX(community_board.index) FROM community_board;"
         mysql_cursor.execute(query)
         index_row = mysql_cursor.fetchone()
@@ -100,10 +103,7 @@ def postBoard():
         elif not index_row[0]:
             index = 1
         else:
-            index = index_row[0]+1
-
-        query = f"INSERT INTO community_board(type, title, content, user_id, register_date) VALUES({boardType},'{title}','{content}','{userId}',CURRENT_TIMESTAMP);"
-        mysql_cursor.execute(query)
+            index = index_row[0]
 
         for office in offices:
             query = f"INSERT INTO community_board_target VALUES ({index},{office});"

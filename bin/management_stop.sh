@@ -18,3 +18,4 @@ echo ""
 
 kill_proc user_management.py
 kill_proc community_management.py
+kill_proc system_management.py

@@ -11,3 +11,9 @@ nohup python3 -u ../src/community_management.py &
 echo "---------------------------------------------"
 ps -ef | grep community_management | grep -v grep
 echo "---------------------------------------------"
+
+echo "system_management 시작"
+nohup python3 -u ../src/system_management.py &
+echo "---------------------------------------------"
+ps -ef | grep system_management | grep -v grep
+echo "---------------------------------------------"
