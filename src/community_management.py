@@ -360,6 +360,9 @@ def boardDetailApis(boardIndex):
         send_data = dict()
         status_code = status.HTTP_200_OK
         try:
+            query = f"update community_board SET view_count = view_count + 1 WHERE community_board.index = {boardIndex};"
+            mysql_cursor.execute(query)
+
             query = f"SELECT type, title, content, user_id, register_date FROM community_board WHERE community_board.index= {boardIndex};"
             mysql_cursor.execute(query)
             board_row = mysql_cursor.fetchone()
