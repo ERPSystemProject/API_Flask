@@ -207,6 +207,7 @@ def getNoticeBoards():
         send_data['result'] = "SUCCESS"
         send_data['list'] = boardList
         send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
+        send_data['totalBoard'] = int(count_row[0])
 
 
     except Exception as e:
@@ -334,6 +335,7 @@ def getRequestBoards():
         send_data['result'] = "SUCCESS"
         send_data['list'] = boardList
         send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
+        send_data['totalBoard'] = int(count_row[0])
 
     except Exception as e:
         send_data = {"result": f"Error : {traceback.format_exc()}"}
@@ -371,7 +373,7 @@ def boardDetailApis(boardIndex):
             data['title'] = board_row[1]
             data['content'] = board_row[2]
             user_id = board_row[3]
-            data['registerData'] = board_row[4]
+            data['registerDate'] = board_row[4]
 
             query = f"SELECT office_tag, name FROM user WHERE user_id = '{user_id}';"
             mysql_cursor.execute(query)
@@ -411,10 +413,14 @@ def boardDetailApis(boardIndex):
             fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
             files = os.listdir(fileDir)
             fileList = list()
-            for filename in files:
+            for index,filename in enumerate(files):
                 file_data = dict()
+                file_data['id'] = index
+                file_data['filepath'] = fileDir + '/' + filename.replace(' ','%20')
+                file_data['fileSize'] = os.path.getsize(fileDir + '/' + filename)
+                file_data['fileType'] = filename.split('.')[-1]
                 file_data['fileName'] = filename
-                file_data['fileUrl'] = fileUrl + filename
+                file_data['fileUrl'] = fileUrl + filename.replace(' ','%20')
                 fileList.append(file_data)
             data['fileList'] = fileList
 
@@ -527,8 +533,8 @@ def boardPostFileApis(boardIndex):
             fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
             file.save(filePath+file.filename)
             send_data['result'] = 'SUCCESS'
-            send_data['filePath'] = filePath+file.filename
-            send_data['fileUrl'] = fileUrl+file.filename
+            send_data['filePath'] = filePath+file.filename.replace(' ','%20')
+            send_data['fileUrl'] = fileUrl+file.filename.replace(' ','%20')
             
         except Exception as e:
             send_data = {"result": f"Error : {traceback.format_exc()}"}

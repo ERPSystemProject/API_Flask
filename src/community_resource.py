@@ -5,6 +5,7 @@ import sys
 
 import flask
 from flask_restx import Api, Resource, Namespace, fields, reqparse
+from flask_jwt_extended import jwt_required
 import werkzeug
 import requests
 import json
@@ -43,13 +44,15 @@ board_list_fields = community_ns.model('board list fields', {
 notice_list_response_fields = community_ns.model('notice list response', {
     'result':fields.String(description="result", required=True, example='SUCCESS'),
     'list':fields.List(fields.Nested(board_list_fields)),
-    'totalPage':fields.Integer(description="totalPage", required=True, example=10)
+    'totalPage':fields.Integer(description="totalPage", required=True, example=10),
+    'totalBoard':fields.Integer(description='totalBoard',required=True,example=15)
 })
 
 request_list_response_fields = community_ns.model('request list response', {
     'result':fields.String(description='result', required=True, example='SUCCESS'),
     'list':fields.List(fields.Nested(board_list_fields)),
-    'totalPage':fields.Integer(description="totalPage", required=True, example=10)
+    'totalPage':fields.Integer(description="totalPage", required=True, example=10),
+    'totalBoard':fields.Integer(description='totalBoard',required=True,example=15)
 })
 
 post_board_request_fields = community_ns.model('post board request', {
@@ -85,7 +88,11 @@ comment_fields = community_ns.model('comment fields', {
 })
 
 file_fields = community_ns.model('file fields', {
+    'id':fields.Integer(description='index',required=True,example=1),
     'fileName':fields.String(description='fileName',required=True,example='test.txt'),
+    'fileType':fields.String(description='fileType',required=True,example='txt'),
+    'fileSize':fields.Integer(description='fileSize bytes',required=True,example=100000),
+    'filePath':fields.String(description='filePath',required=True,example='/path/test.txt'),
     'fileUrl':fields.String(description='fileUrl',required=True,example='http://52.79.206.187:19999/community_board/1/test.txt')
 })
 
@@ -115,6 +122,7 @@ class noticeApiList(Resource):
     @community_ns.expect(notice_query_parser)
     @community_ns.response(200, 'OK', notice_list_response_fields)
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get notice list 
@@ -130,6 +138,7 @@ class requestApiList(Resource):
     @community_ns.expect(request_query_parser)
     @community_ns.response(200, 'OK', request_list_response_fields)
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get request list
@@ -139,19 +148,20 @@ class requestApiList(Resource):
         result = json.loads(res.text)
         return result, res.status_code
 
-@community_ns.route('/')
+@community_ns.route('')
 class communityApiList(Resource):
     
     @community_ns.expect(post_board_request_fields)
     @community_ns.response(201, 'OK', post_board_response_fields)
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post board
         board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
-        res = requests.post(f"http://{management_url}/", data=json.dumps(request_body), timeout=3)
+        res = requests.post(f"http://{management_url}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
@@ -159,6 +169,7 @@ class communityApiList(Resource):
 class communityBoardApiList(Resource):
 
     @community_ns.response(200, 'OK', get_board_detail_fields)
+    @jwt_required()
     def get(self,boardIndex):
         '''
         get board detail
@@ -171,6 +182,7 @@ class communityBoardApiList(Resource):
     @community_ns.expect(post_board_request_fields)
     @community_ns.response(200, 'OK', post_board_response_fields)
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,boardIndex):
         '''
         adjust board
@@ -182,6 +194,7 @@ class communityBoardApiList(Resource):
         return result, res.status_code
 
     @community_ns.doc(responses={204: 'OK'})
+    @jwt_required()
     def delete(self,boardIndex):
         '''
         delete board
@@ -198,6 +211,7 @@ class communityBoardCommentPostApiList(Resource):
     @community_ns.expect(comment_request_fields)
     @community_ns.response(201, 'OK', comment_response_fields)
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self,boardIndex):
         '''
         post comment
@@ -213,6 +227,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.expect(comment_request_fields)
     @community_ns.response(200, 'OK', comment_response_fields)
     @community_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,boardIndex,commentIndex):
         '''
         adjust comment
@@ -223,6 +238,7 @@ class communityBoardCommentApiList(Resource):
         return result, res.status_code
 
     @community_ns.doc(responses={204: 'OK'})
+    @jwt_required()
     def delete(self,boardIndex,commentIndex):
         '''
         delete comment
@@ -238,6 +254,7 @@ class communityBoardCommentApiList(Resource):
     @community_ns.expect(upload_parser)
     @community_ns.response(201, 'OK', post_board_response_fields)
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self,boardIndex):
         '''
         post file of board
@@ -257,6 +274,7 @@ class communityBoardCommentApiList(Resource):
 @community_ns.route('/<int:boardIndex>/file/<string:fileName>')
 class communityBoardCommentApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
+    @jwt_required()
     def delete(self,boardIndex,fileName):
         '''
         delete file of board

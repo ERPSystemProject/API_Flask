@@ -21,3 +21,9 @@ community_management:
 system_management:
   ip: 127.0.0.1
   port: 18004
+goods_management:
+  ip: 127.0.0.1
+  port: 18005
+etc_management:
+  ip: 127.0.0.1
+  port: 18006

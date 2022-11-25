@@ -18,10 +18,13 @@ import requests
 import json
 import yaml
 from multiprocessing import Process
+from flask_jwt_extended import JWTManager
 
 import user_resource
 import community_resource
 import system_resource
+import goods_resource
+import etc_resource
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
@@ -33,10 +36,18 @@ api = Api(app=flask_app,
           contact='tjwnsgh34@gmail.com',
           license='MIT')
 flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
+flask_app.config.update(
+			DEBUG = True,
+			JWT_SECRET_KEY = "WATERIN"
+		)
+
+jwt = JWTManager(flask_app)
 
 api.add_namespace(user_resource.user_ns, path='/ERPSystem/v1.0/users')
 api.add_namespace(community_resource.community_ns, path='/ERPSystem/v1.0/community')
+api.add_namespace(goods_resource.goods_ns, path='/ERPSystem/v1.0/goods')
 api.add_namespace(system_resource.system_ns, path='/ERPSystem/v1.0/system')
+api.add_namespace(etc_resource.etc_ns, path='/ERPSystem/v1.0/etc')
 
 def setup_api_server():
     try:

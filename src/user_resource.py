@@ -26,6 +26,8 @@ user_authority_fields = user_ns.model('user authority',{
 
 user_login_response_fields = user_ns.model('Login Response Body', {
     'result':fields.String(description='login result', required=True, example='SUCCESS'),
+    'userId':fields.String(description='user id',required=True,example='admin'),
+    'token':fields.String(description='JWT token',required=True,example='token'),
     'authority':fields.Nested(user_authority_fields)})
 
 user_login_request_fields = user_ns.model('Login Request Body',{

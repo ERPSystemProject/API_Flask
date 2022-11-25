@@ -5,28 +5,21 @@ import logging
 import json
 import sys
 import yaml
+import os
+import shutil
+import traceback
 
 import flask
 from flask import request
 from flask_api import status
-from flask_jwt_extended import JWTManager, create_access_token
+
 import pymysql
-import datetime
 
 logWriter = None
 db_config = None
 config_path = "../config/config.yaml"
 
 app = flask.Flask(__name__)
-
-# 토큰 생성에 사용될 Secret Key를 flask 환경 변수에 등록
-app.config.update(
-			DEBUG = True,
-			JWT_SECRET_KEY = "WATERIN"
-		)
-
-# JWT 확장 모듈을 flask 어플리케이션에 등록
-jwt = JWTManager(app)
 
 # DB 접속
 def connect_mysql():
@@ -58,52 +51,34 @@ def load_config():
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return result, status_code
     
-#로그인
-@app.route('/login', methods=['POST'])
-def userLogin():
+#office 드롭박스 리스트 조회
+@app.route('/offices', methods=['GET'])
+def getOfficeDropBoxList():
     send_data = dict()
-    status_code = status.HTTP_201_CREATED
+    status_code = status.HTTP_200_OK
     mysql_cursor, connect_code = connect_mysql()
     if not connect_code == status.HTTP_200_OK:
         return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
 
     try:
-        request_body = json.loads(request.get_data())
-        user_id = request_body['id']
-        user_password = request_body['password']
-        query = f"SELECT password FROM user WHERE user_id = '{user_id}';"
-        mysql_cursor.execute(query)
-        password_row = mysql_cursor.fetchone()
+        params = request.args.to_dict()
 
-        if not password_row:
-            send_data = {"result": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
-            status_code = status.HTTP_401_UNAUTHORIZED
-            return flask.make_response(flask.jsonify(send_data), status_code)
-        if user_password != password_row[0]:
-            send_data = {"result": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
-            status_code = status.HTTP_401_UNAUTHORIZED
-            return flask.make_response(flask.jsonify(send_data), status_code)
-        query = f"SELECT community_board_flag, goods_management_flag, consignment_management_flag, move_management_flag, sell_managemant_flag, remain_management_flag, sale_management_flag, system_management_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
+        if 'keyword' in params:
+            query = f"SELECT office_tag, office_name FROM office WHERE office_tag > 0 and office_name like '%{keyword}%';"
+        else:
+            query = "SELECT office_tag, office_name FROM office WHERE office_tag > 0;"
         mysql_cursor.execute(query)
-        authority_row = mysql_cursor.fetchone()
-        if not authority_row:
-            send_data = {"result": "권한을 가져오는데 실패했습니다. 관리자에게 문의하세요."}
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            return flask.make_response(flask.jsonify(send_data), status_code)
-        send_data['result'] = "SUCCESS"
-        send_data['userId'] = user_id
-        send_data['authority'] = dict()
-        send_data['authority']['community_board_flag'] = authority_row[0]
-        send_data['authority']['goods_management_flag'] = authority_row[1]
-        send_data['authority']['consignment_management_flag'] = authority_row[2]
-        send_data['authority']['move_management_flag'] = authority_row[3]
-        send_data['authority']['sell_managemant_flag'] = authority_row[4]
-        send_data['authority']['remain_management_flag'] = authority_row[5]
-        send_data['authority']['sale_management_flag'] = authority_row[6]
-        send_data['authority']['system_management_flag'] = authority_row[7]
-        send_data['authority']['user_authority_management_flag'] = authority_row[8]
+        office_rows = mysql_cursor.fetchall()
 
-        send_data['token'] = create_access_token(identity = user_id, expires_delta = datetime.timedelta(minutes=15))
+        officeList = list()
+        for office_row in office_rows:
+            data = dict()
+            data['officeTag'] = office_row[0]
+            data['officeMame'] = office_row[1]
+            officeList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = officeList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -121,11 +96,11 @@ def setup_api_server():
         if status_code != status.HTTP_200_OK:
             sys.exit(config)
         log_config = config['LOG']
-        process_config = config['user_management']
+        process_config = config['etc_management']
         db_config = config['DB']['mysql']
 
         #LogWriter 설정
-        log_filename = log_config['filepath']+"user_management.log"
+        log_filename = log_config['filepath']+"etc_management.log"
         log_format = log_config['format']
         log_level = log_config['level']
         if log_level == 'CRITICAL':

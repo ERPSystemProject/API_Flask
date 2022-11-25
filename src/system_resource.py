@@ -5,6 +5,7 @@ import sys
 
 import flask
 from flask_restx import Api, Resource, Namespace, fields, reqparse
+from flask_jwt_extended import jwt_required
 import werkzeug
 import requests
 import json
@@ -118,7 +119,7 @@ office_fields = system_ns.model('office system fields', {
     'tag':fields.Integer(description='office tag', required=True, example=1),
     'name':fields.String(description='office name', required=True, example='office'),
     'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:consignment, 3:direct management, 4:event, 5:retail sale, 6:online, 7:home shopping', required=True, example=1)),
-    'costType':fields.List(fields.Integer(description='cost type | 1:euro, 2:laprima cost, 3: discount cost, 4: event cost, 5: department store cost, 6: outlet cost, 7: regular cost, 8: first cost', required=True, example=1)),
+    'costType':fields.List(fields.Integer(description='cost type | 1:euro, 2:sale cost, 3: discount cost, 4: event cost, 5: department store cost, 6: outlet cost, 7: regular cost, 8: first cost', required=True, example=1)),
     'registrationName':fields.String(description='registration name', required=True, example='registration name'),
     'registrationNumber':fields.String(description='registration number',required=True,example='111-11-11111'),
     'representative':fields.String(description='representative', required=True,example='representative'),
@@ -142,7 +143,7 @@ office_request_fields = system_ns.model('office system register fields', {
     'registrationName':fields.String(description='registration name', required=True, example='registration name'),
     'registrationNumber':fields.String(description='registration number',required=True,example='111-11-11111'),
     'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:consignment, 3:direct management, 4:event, 5:retail sale, 6:online, 7:home shopping', required=True, example=1)),
-    'costType':fields.List(fields.Integer(description='cost type | 1:euro, 2:laprima cost, 3: discount cost, 4: event cost, 5: department store cost, 6: outlet cost, 7: regular cost, 8: first cost', required=True, example=1)),
+    'costType':fields.List(fields.Integer(description='cost type | 1:euro, 2:sale cost, 3: discount cost, 4: event cost, 5: department store cost, 6: outlet cost, 7: regular cost, 8: first cost', required=True, example=1)),
     'representative':fields.String(description='representative', required=True,example='representative'),
     'phoneNumber':fields.String(description='phone number', required=True, example='010-1111-1111'),
     'faxNumber':fields.String(description='FAX number', required=True, example='02-1111-1111'),
@@ -235,6 +236,7 @@ class brandApiList(Resource):
     @system_ns.expect(brand_query_parser)
     @system_ns.response(200, 'OK', brand_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get brand list
@@ -247,6 +249,7 @@ class brandApiList(Resource):
     @system_ns.expect(brand_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post brand
@@ -261,6 +264,7 @@ class brandDetailApiList(Resource):
     @system_ns.expect(brand_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,brandTag):
         '''
         adjust brand
@@ -271,6 +275,7 @@ class brandDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,brandTag):
         '''
         delete brand
@@ -287,6 +292,7 @@ class categoryApiList(Resource):
     @system_ns.expect(category_query_parser)
     @system_ns.response(200, 'OK', category_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get category list
@@ -299,6 +305,7 @@ class categoryApiList(Resource):
     @system_ns.expect(category_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post category
@@ -314,6 +321,7 @@ class categoryDetailApiList(Resource):
     @system_ns.expect(category_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,categoryTag):
         '''
         adjust category
@@ -324,6 +332,7 @@ class categoryDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,categoryTag):
         '''
         delete category
@@ -340,6 +349,7 @@ class originApiList(Resource):
     @system_ns.expect(origin_query_parser)
     @system_ns.response(200, 'OK', origin_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get origin list
@@ -352,6 +362,7 @@ class originApiList(Resource):
     @system_ns.expect(origin_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post origin
@@ -367,6 +378,7 @@ class originDetailApiList(Resource):
     @system_ns.expect(origin_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,originName):
         '''
         adjust origin
@@ -377,6 +389,7 @@ class originDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,originName):
         '''
         delete origin
@@ -393,6 +406,7 @@ class supplierApiList(Resource):
     @system_ns.expect(supplier_query_parser)
     @system_ns.response(200, 'OK', supplier_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get supplier list
@@ -405,6 +419,7 @@ class supplierApiList(Resource):
     @system_ns.expect(supplier_request_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post supplier
@@ -420,6 +435,7 @@ class supplierDetailApiList(Resource):
     @system_ns.expect(supplier_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,supplierTag):
         '''
         adjust supplier
@@ -430,6 +446,7 @@ class supplierDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,supplierTag):
         '''
         delete supplier
@@ -446,6 +463,7 @@ class sellerApiList(Resource):
     @system_ns.expect(seller_query_parser)
     @system_ns.response(200, 'OK', seller_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get seller list
@@ -458,6 +476,7 @@ class sellerApiList(Resource):
     @system_ns.expect(seller_request_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post seller
@@ -473,6 +492,7 @@ class sellerDetailApiList(Resource):
     @system_ns.expect(seller_request_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,sellerTag):
         '''
         adjust seller
@@ -483,6 +503,7 @@ class sellerDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,sellerTag):
         '''
         delete seller
@@ -498,6 +519,7 @@ class sellerDetailApiList(Resource):
 
     @system_ns.response(200, 'OK', seller_cost_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self,sellerTag):
         '''
         get seller cost list
@@ -509,6 +531,7 @@ class sellerDetailApiList(Resource):
     @system_ns.expect(seller_register_cost_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self,sellerTag):
         '''
         post seller cost
@@ -524,6 +547,7 @@ class officeApiList(Resource):
     @system_ns.expect(office_query_parser)
     @system_ns.response(200, 'OK', office_response_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def get(self):
         '''
         get office list
@@ -536,6 +560,7 @@ class officeApiList(Resource):
     @system_ns.expect(office_request_fields)
     @system_ns.response(201, 'OK', result_fields)
     @system_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def post(self):
         '''
         post office
@@ -551,6 +576,7 @@ class officeDetailApiList(Resource):
     @system_ns.expect(office_request_fields)
     @system_ns.response(200, 'OK', result_fields)
     @system_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
     def put(self,officeTag):
         '''
         adjust office
@@ -561,6 +587,7 @@ class officeDetailApiList(Resource):
         return result, res.status_code
 
     @system_ns.doc(responses={204:'OK'})
+    @jwt_required()
     def delete(self,officeTag):
         '''
         delete office
