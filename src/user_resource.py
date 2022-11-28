@@ -5,6 +5,7 @@ import sys
 
 import flask
 from flask_restx import Api, Resource, Namespace, fields, reqparse
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 import requests
 import json
@@ -35,6 +36,11 @@ user_login_request_fields = user_ns.model('Login Request Body',{
     'password':fields.String(description='user password', required=True, example='0000')
 })
 
+token_response_fields = user_ns.model('token Response Body', {
+    'result':fields.String(description='login result', required=True, example='SUCCESS'),
+    'userId':fields.String(description='user id',required=True,example='admin'),
+    'authority':fields.Nested(user_authority_fields)})
+
 #config 불러오기
 f = open('../config/config.yaml')
 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -55,5 +61,20 @@ class login(Resource):
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/login", data=json.dumps(request_body), timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@user_ns.route('/token')
+class token(Resource):
+
+    @user_ns.response(200, 'OK', token_response_fields)
+    @user_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get user information by token request
+        '''
+        id = get_jwt_identity()
+        res = requests.get(f"http://{management_url}/{id}", timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
