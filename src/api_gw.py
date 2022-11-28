@@ -35,13 +35,22 @@ from datetime import timezone
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
+authorizations = {
+    'JWT' : {
+        'type' : 'apiKey',
+        'in' : 'header',
+        'name' : 'Authorization'
+    }
+}
 api = Api(app=flask_app,
           version='0.1',
           title='ERP System API Server',
           description='ERP System API List Description',
           terms_url='/ERPSystem/v1.0',
           contact='tjwnsgh34@gmail.com',
-          license='MIT')
+          license='MIT',
+          authorizations=authorizations,
+          security='JWT')
 flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 flask_app.config.update(
 			DEBUG = True,
