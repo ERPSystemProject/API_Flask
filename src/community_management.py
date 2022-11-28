@@ -369,6 +369,7 @@ def boardDetailApis(boardIndex):
             mysql_cursor.execute(query)
             board_row = mysql_cursor.fetchone()
             data = dict()
+            data['boardIndex'] = boardIndex
             data['boardType'] = board_row[0]
             data['title'] = board_row[1]
             data['content'] = board_row[2]

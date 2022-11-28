@@ -97,6 +97,7 @@ file_fields = community_ns.model('file fields', {
 })
 
 get_board_detail_fields = community_ns.model('board detail fields', {
+    'boardIndex':fields.Integer(description='id', required=True, example=1),
     'targetOffices':fields.List(fields.Integer(description='targetOffices ID | 0: all', required=True, example=0)),
     'boardType':fields.Integer(description='board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request', required=True, example=0),
     'title':fields.String(description='title', required=True, example='title'),

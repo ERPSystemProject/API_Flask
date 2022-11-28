@@ -18,13 +18,20 @@ import requests
 import json
 import yaml
 from multiprocessing import Process
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt
+from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import JWTManager
+from flask_jwt_extended import set_access_cookies
 
 import user_resource
 import community_resource
 import system_resource
 import goods_resource
 import etc_resource
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 
 flask_app = flask.Flask(__name__)
 CORS(flask_app)
@@ -48,6 +55,22 @@ api.add_namespace(community_resource.community_ns, path='/ERPSystem/v1.0/communi
 api.add_namespace(goods_resource.goods_ns, path='/ERPSystem/v1.0/goods')
 api.add_namespace(system_resource.system_ns, path='/ERPSystem/v1.0/system')
 api.add_namespace(etc_resource.etc_ns, path='/ERPSystem/v1.0/etc')
+
+# Using an `after_request` callback, we refresh any token that is within 30
+# minutes of expiring. Change the timedeltas to match the needs of your application.
+@flask_app.after_request
+def refresh_expiring_jwts(response):
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=15))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        # Case where there is not a valid JWT. Just return the original response
+        return response
 
 def setup_api_server():
     try:
