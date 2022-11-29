@@ -5,7 +5,7 @@ import sys
 
 import flask
 from flask_restx import Api, Resource, Namespace, fields, reqparse
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import werkzeug
 import requests
 import json
@@ -47,10 +47,6 @@ first_cost_query_parser.add_argument('supplierTagList', type=int, help='supplier
 first_cost_query_parser.add_argument('searchType', type=int, help='search type | 0:part_number, 1:tag, 2:color, 3:material, 4:size')
 first_cost_query_parser.add_argument('searchContent', type=str, help='search content')
 
-management_cost_parser = reqparse.RequestParser()
-management_cost_parser.add_argument('rate',type=float,help='management cost rate')
-management_cost_parser.add_argument('cost',type=int,help='management cost')
-
 upload_parser = reqparse.RequestParser()
 upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload', action='append')
 upload_parser.add_argument('type', location='args', type=int, help='type | 1: goods image, 2: import certificate images')
@@ -89,6 +85,7 @@ goods_list_response_fields = goods_ns.model('goods list response fields', {
 })
 
 goods_register_fields = goods_ns.model('goods register fields', {
+    'registerType':fields.Integer(description='register type | 1: excel, 2: batch, 3: handwork',required=True,example=1),
     'stockingDate':fields.String(description='stocking date',required=True,example='2022-11-02'),
     'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
     'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
@@ -113,7 +110,39 @@ goods_register_fields = goods_ns.model('goods register fields', {
     'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
     'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
     'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
-    'firstCost':fields.Integer(description='first cost',required=True,example=700000)
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
+    'userId':fields.String(description='user ID',required=True,example='admin')
+})
+
+goods_modify_fields = goods_ns.model('goods modify fields', {
+    'goodsTag':fields.String(description='goods tag',required=True,example='tag'),
+    'registerType':fields.Integer(description='register type | 1: excel, 2: batch, 3: handwork',required=True,example=1),
+    'stockingDate':fields.String(description='stocking date',required=True,example='2022-11-02'),
+    'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
+    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
+    'officeTag':fields.Integer(description='office tag',required=True,example=1),
+    'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
+    'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
+    'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
+    'origin':fields.String(description='origin',required=True,example='ITALY'),
+    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'color':fields.String(description='color',required=True,example='BLACK'),
+    'size':fields.String(description='size',required=True,example='M'),
+    'material':fields.String(description='material',required=True,example='100% COTTON'),
+    'season':fields.String(description='season',required=True,example='2022F/W'),
+    'blNumber':fields.String(description='BL number',required=True,example='-'),
+    'description':fields.String(description='description',required=True,example='memo'),
+    'cost':fields.Integer(description='cost',required=True,example=0),
+    'regularCost':fields.Integer(description='regular cost',required=True,example=1000000),
+    'saleCost':fields.Integer(description='sale cost',required=True,example=900000),
+    'eventCost':fields.Integer(description='event cost',required=True,example=0),
+    'discountCost':fields.Integer(description='discount cost',required=True,example=850000),
+    'managementCost':fields.Integer(description='management cost',required=True,example=50000),
+    'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
+    'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
+    'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
+    'userId':fields.String(description='user ID',required=True,example='admin')
 })
 
 goods_register_response_fields = goods_ns.model('goods register response fields',{
@@ -125,13 +154,13 @@ goods_base_information_fields = goods_ns.model('goods base information fields', 
     'stockingDate':fields.String(description='stocking date',required=True,example='2022-11-02'),
     'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
     'registerDate':fields.String(description='register date',required=True,example='2022-11-03'),
-    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
-    'officeTag':fields.Integer(description='office tag',required=True,example=1),
+    'supplier':fields.String(description='supplier',required=True,example='supplier'),
+    'office':fields.String(description='office',required=True,example='office'),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
-    'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
-    'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
+    'brand':fields.String(description='brand Tag',required=True,example='AP'),
+    'category':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'sex':fields.String(description='sex',required=True,example='male'),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -154,13 +183,16 @@ goods_cost_information_fields = goods_ns.model('goods cost information fields',{
 })
 
 goods_image_fields = goods_ns.model('goods image fields', {
+    'imageIndex':fields.Integer(description='image index',required=True,example=1),
+    'imagePath':fields.String(description='image path',required=True,example='/path/to/image'),
+    'imageType':fields.String(description='image type',required=True,example='jpg'),
     'imageName':fields.String(description='image name',required=True,example='test.jpg'),
     'imageUrl':fields.String(description='image url',required=True,example='url')
 })
 
 goods_sold_information_fields = goods_ns.model('goods sold information fields', {
     'saleDate':fields.String(description='sale date',required=True,example='2022-11-20'),
-    'type':fields.Integer(description='sale type | 1:wholesale, 2:consignment, 3:direct management, 4:event, 5:retail sale, 6:online, 7:home shopping', required=True,example=1),
+    'type':fields.String(description='sale type', required=True,example='home shopping'),
     'cost':fields.Integer(description='sale price',required=True,example=750000),
     'commissionRate':fields.Float(description='commissionRate',required=True,example=15.5),
     'sellerName':fields.String(description='seller name',required=True,example='seller'),
@@ -183,8 +215,8 @@ goods_history_fields = goods_ns.model('goods history fields', {
 })
 
 get_goods_detail_fields = goods_ns.model('goods detail get fields', {
-    'BaseInformation':fields.Nested(goods_base_information_fields),
-    'CostInformation':fields.Nested(goods_cost_information_fields),
+    'baseInformation':fields.Nested(goods_base_information_fields),
+    'costInformation':fields.Nested(goods_cost_information_fields),
     'importCertificateImages':fields.List(fields.Nested(goods_image_fields)),
     'goodsImages':fields.List(fields.Nested(goods_image_fields)),
     'soldInformation':fields.Nested(goods_sold_information_fields),
@@ -236,6 +268,7 @@ goods_first_cost_detail_fields = goods_ns.model('goods first cost detail fields'
     'saleDate':fields.String(description='sale date',required=True,example='2022-11-10'),
     'office':fields.String(description='office name',required=True,example='office'),
     'cost':fields.Integer(description='cost',required=True,example=0),
+    'firstCost':fields.Integer(description='first cost',required=True,example=800000),
     'regularCost':fields.Integer(description='regular cost',required=True,example=1000000),
     'saleCost':fields.Integer(description='sale cost',required=True,example=900000),
     'discountCost':fields.Integer(description='discount cost',required=True,example=850000),
@@ -254,6 +287,10 @@ goods_first_cost_detail_response_fields = goods_ns.model('goods first cost detai
 
 management_cost_adjust_response_fields = goods_ns.model('management cost adjust response fields', {
     'result':fields.String(description='result',required=True,example='SUCCESS')
+})
+
+management_cost_adjust_request_fields = goods_ns.model('management cost adjust request fields', {
+    'totalManagemnetCost':fields.Integer(description='total management cost',required=True,example=10000000)
 })
 
 #config 불러오기
@@ -294,7 +331,7 @@ class goodsDetailApiList(Resource):
         result = json.loads(res.text)
         return result, res.status_code
 
-    @goods_ns.expect(goods_register_fields)
+    @goods_ns.expect(goods_modify_fields)
     @goods_ns.response(200, 'OK', goods_register_response_fields)
     @goods_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     @jwt_required()
@@ -322,7 +359,7 @@ class goodsDetailApiList(Resource):
 
     @goods_ns.doc(responses={204: 'OK'})
     @jwt_required()
-    def delete(self,boardIndex):
+    def delete(self,goodsTag):
         '''
         delete goods
         '''
@@ -343,8 +380,9 @@ class goodsImageApiList(Resource):
         '''
         register goods image
         '''
-        args = notice_query_parser.parse_args()
-        files = flask.request.files
+        id = get_jwt_identity()
+        args = upload_parser.parse_args()
+        args['userId'] = id
         file_list = list()
         upload_files = flask.request.files.getlist("files")
         for upload_file in upload_files:
@@ -356,16 +394,16 @@ class goodsImageApiList(Resource):
         result = json.loads(res.text)
         return result, res.status_code
 
-@goods_ns.route('/<string:goodsTag>/image/<string:imageName>')
-class goodsImageApiList(Resource):
+@goods_ns.route('/<string:goodsTag>/image/<int:imageIndex>')
+class goodsImageDetailApiList(Resource):
     
     @goods_ns.doc(responses={204: 'OK'})
     @jwt_required()
-    def delete(self,goodsTag,imageName):
+    def delete(self,goodsTag,imageIndex):
         '''
         delete goods image
         '''
-        res = requests.delete(f"http://{management_url}/{goodsTag}/image/{imageName}", timeout=3)
+        res = requests.delete(f"http://{management_url}/{goodsTag}/image/{imageIndex}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
         result = json.loads(res.text)
@@ -401,7 +439,7 @@ class goodsFirstCostDetailApiList(Resource):
         result = json.loads(res.text)
         return result, res.status_code
 
-    @goods_ns.expect(management_cost_parser)
+    @goods_ns.expect(management_cost_adjust_request_fields)
     @goods_ns.response(200, 'OK', management_cost_adjust_response_fields)
     @goods_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
     @jwt_required()
