@@ -41,6 +41,15 @@ token_response_fields = user_ns.model('token Response Body', {
     'userId':fields.String(description='user id',required=True,example='admin'),
     'authority':fields.Nested(user_authority_fields)})
 
+user_info_response_fields = user_ns.model('user information Response Body', {
+    'result':fields.String(description='login result', required=True, example='SUCCESS'),
+    'name':fields.String(description='user name',required=True,example='name'),
+    'department':fields.String(description='user department',required=True,example='department'),
+    'phoneNumber':fields.String(description='user phone number',required=True,example='010-1111-1111'),
+    'email':fields.String(description='user email',required=True,example='email'),
+    'office':fields.String(description='user office name',required=True,example='office'),
+    'registerDate':fields.String(description='user register date',required=True,example='2022-11-01 00:00:00')})
+
 #config 불러오기
 f = open('../config/config.yaml')
 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -76,5 +85,20 @@ class token(Resource):
         '''
         id = get_jwt_identity()
         res = requests.get(f"http://{management_url}/{id}", timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@user_ns.route('/information')
+class information(Resource):
+
+    @user_ns.response(200, 'OK', user_info_response_fields)
+    @user_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get user detail information by token request
+        '''
+        id = get_jwt_identity()
+        res = requests.get(f"http://{management_url}/information/{id}", timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

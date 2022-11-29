@@ -111,7 +111,7 @@ def userLogin():
     finally:
         return flask.make_response(flask.jsonify(send_data), status_code)
 
-#로그인
+#토큰으로 현재 회원 값 조회
 @app.route('/<string:user_id>', methods=['GET'])
 def tokenUser(user_id):
     send_data = dict()
@@ -149,6 +149,45 @@ def tokenUser(user_id):
         send_data['authority']['sale_management_flag'] = authority_row[6]
         send_data['authority']['system_management_flag'] = authority_row[7]
         send_data['authority']['user_authority_management_flag'] = authority_row[8]
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#토큰으로 현재 회원 상세 조회
+@app.route('/information/<string:user_id>', methods=['GET'])
+def userInformation(user_id):
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        query = f"SELECT name, department, phone_number, email, office_tag, register_date FROM user WHERE user_id = '{user_id}';"
+        mysql_cursor.execute(query)
+        info_row = mysql_cursor.fetchone()
+        if not info_row:
+            send_data = {"result": "올바르지 않은 토큰입니다."}
+            status_code = status.HTTP_401_UNAUTHORIZED
+            return flask.make_response(flask.jsonify(send_data), status_code)
+        
+        send_data['result'] = "SUCCESS"
+        send_data['name'] = info_row[0]
+        send_data['department'] = info_row[1]
+        send_data['phoneNumber'] = info_row[2]
+        send_data['email'] = info_row[3]
+        office_tag = info_row[4]
+        send_data['registerDate'] = info_row[5]
+        if office_tag:
+            query = f"SELECT office_name FROM office WHERE office_tag = {office_tag};"
+            mysql_cursor.execute(query)
+            office_row = mysql_cursor.fetchone()
+            send_data['office'] = office_row[0]
+        else:
+            send_data['office'] = None
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
