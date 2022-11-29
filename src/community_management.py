@@ -531,7 +531,6 @@ def boardPostFileApis(boardIndex):
         try:
             files = flask.request.files.getlist("files")
             filePath = f"/home/ubuntu/data/community_board/{boardIndex}/"
-            fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
             for file in files:
                 file.save(filePath+file.filename)
             send_data['result'] = 'SUCCESS'

@@ -260,11 +260,8 @@ class communityBoardFileApiList(Resource):
         '''
         post file of board
         '''
-        files = flask.request.files
-        print(files)
         file_list = list()
         upload_files = flask.request.files.getlist("files")
-        print(upload_files)
         for upload_file in upload_files:
             filename = upload_file.filename
             file_ = upload_file.read()
