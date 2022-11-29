@@ -529,13 +529,13 @@ def boardPostFileApis(boardIndex):
         send_data = dict()
         status_code = status.HTTP_201_CREATED
         try:
-            file = flask.request.files['files']
+            files = flask.request.files.getlist("files")
             filePath = f"/home/ubuntu/data/community_board/{boardIndex}/"
             fileUrl = f"http://52.79.206.187:19999/community_board/{boardIndex}/"
-            file.save(filePath+file.filename)
+            for file in files:
+                file.save(filePath+file.filename)
             send_data['result'] = 'SUCCESS'
-            send_data['filePath'] = filePath+file.filename.replace(' ','%20')
-            send_data['fileUrl'] = fileUrl+file.filename.replace(' ','%20')
+            send_data['boardIndex'] = boardIndex
             
         except Exception as e:
             send_data = {"result": f"Error : {traceback.format_exc()}"}

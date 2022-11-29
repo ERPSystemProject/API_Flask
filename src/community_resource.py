@@ -27,7 +27,7 @@ request_query_parser.add_argument('searchContent', type=str, help='searchContent
 request_query_parser.add_argument('boardType', type=int, help='boardType 0: all, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request')
 
 upload_parser = reqparse.RequestParser()
-upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload')
+upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload', action='append')
 
 board_list_fields = community_ns.model('board list fields', {
     'boardIndex':fields.Integer(description='id', required=True, example=1),
@@ -251,7 +251,7 @@ class communityBoardCommentApiList(Resource):
         return result, res.status_code
 
 @community_ns.route('/<int:boardIndex>/file')
-class communityBoardCommentApiList(Resource):
+class communityBoardFileApiList(Resource):
     @community_ns.expect(upload_parser)
     @community_ns.response(201, 'OK', post_board_response_fields)
     @community_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
@@ -261,19 +261,22 @@ class communityBoardCommentApiList(Resource):
         post file of board
         '''
         files = flask.request.files
+        print(files)
         file_list = list()
         upload_files = flask.request.files.getlist("files")
+        print(upload_files)
         for upload_file in upload_files:
             filename = upload_file.filename
             file_ = upload_file.read()
             type_ = upload_file.content_type
             file_list.append(('files',(filename,file_,type_)))
+        
         res = requests.post(f"http://{management_url}/{boardIndex}/file", files=file_list, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
 @community_ns.route('/<int:boardIndex>/file/<string:fileName>')
-class communityBoardCommentApiList(Resource):
+class communityBoardFileDetailApiList(Resource):
     @community_ns.doc(responses={204: 'OK'})
     @jwt_required()
     def delete(self,boardIndex,fileName):
