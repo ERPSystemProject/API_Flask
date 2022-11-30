@@ -28,6 +28,7 @@ import user_resource
 import community_resource
 import system_resource
 import goods_resource
+import consignment_resource
 import etc_resource
 from datetime import datetime
 from datetime import timedelta
@@ -51,7 +52,7 @@ api = Api(app=flask_app,
           license='MIT',
           authorizations=authorizations,
           security='JWT')
-flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
+flask_app.config.SWAGGER_UI_DOC_EXPANSION = 'none'
 flask_app.config.update(
 			DEBUG = True,
 			JWT_SECRET_KEY = "WATERIN"
@@ -62,6 +63,7 @@ jwt = JWTManager(flask_app)
 api.add_namespace(user_resource.user_ns, path='/ERPSystem/v1.0/users')
 api.add_namespace(community_resource.community_ns, path='/ERPSystem/v1.0/community')
 api.add_namespace(goods_resource.goods_ns, path='/ERPSystem/v1.0/goods')
+api.add_namespace(consignment_resource.consignment_ns, path='/ERPSystem/v1.0/consignment')
 api.add_namespace(system_resource.system_ns, path='/ERPSystem/v1.0/system')
 api.add_namespace(etc_resource.etc_ns, path='/ERPSystem/v1.0/etc')
 

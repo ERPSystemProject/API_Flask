@@ -24,6 +24,12 @@ echo "---------------------------------------------"
 ps -ef | grep goods_management | grep -v grep
 echo "---------------------------------------------"
 
+echo "consignment_management 시작"
+nohup python3 -u ../src/consignment_management.py &
+echo "---------------------------------------------"
+ps -ef | grep consignment_management | grep -v grep
+echo "---------------------------------------------"
+
 echo "etc_management 시작"
 nohup python3 -u ../src/etc_management.py &
 echo "---------------------------------------------"
