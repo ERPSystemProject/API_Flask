@@ -74,7 +74,7 @@ def getOfficeDropBoxList():
         for office_row in office_rows:
             data = dict()
             data['officeTag'] = office_row[0]
-            data['officeMame'] = office_row[1]
+            data['officeName'] = office_row[1]
             officeList.append(data)
 
         send_data['result'] = 'SUCCESS'
