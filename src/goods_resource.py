@@ -28,6 +28,7 @@ goods_query_parser.add_argument('supplierTagList', type=int, help='supplier tag 
 goods_query_parser.add_argument('officeTagList', type=int, help='office tag list', action='append')
 goods_query_parser.add_argument('statusList', type=int, help='goods status | 1:scretch, 2:unable sale, 3:discard, 4:normal, 5:lost, 6:waiting for calculate, 7:waiting for distribution, 8:retrieve success, 9:fixing, 10:waiting for return calculate, 11:sold, 12:waiting for move sign, 13:waiting for client return', action='append')
 goods_query_parser.add_argument('imageFlag', type=int, help='search image | 0:all, 1:included 2: not included')
+goods_query_parser.add_argument('seasonList', type=str, help='search season list', action='append')
 goods_query_parser.add_argument('searchType', type=int, help='search type | 0:part_number, 1:tag, 2:color, 3:material, 4:size')
 goods_query_parser.add_argument('searchContent', type=str, help='search content')
 
@@ -420,7 +421,7 @@ class goodsFirstCostApiList(Resource):
         '''
         get goods first cost list 
         '''
-        args = goods_query_parser.parse_args()
+        args = first_cost_query_parser.parse_args()
         res = requests.get(f"http://{management_url}/firstCost", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -447,7 +448,7 @@ class goodsFirstCostDetailApiList(Resource):
         '''
         adjust management first cost
         '''
-        args = goods_query_parser.parse_args()
-        res = requests.get(f"http://{management_url}/firstCost/{supplierTag}/{stockingDate}", params=args, timeout=3)
+        request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        res = requests.get(f"http://{management_url}/firstCost/{supplierTag}/{stockingDate}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

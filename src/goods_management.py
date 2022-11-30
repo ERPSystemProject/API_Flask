@@ -228,6 +228,20 @@ def getGoodsList():
                     condition_query = condition_query + f" and goods_tag NOT IN (SELECT DISTINCT goods_tag FROM goods_image)"
                 else:
                     condition_query = f"WHERE goods_tag NOT IN (SELECT DISTINCT goods_tag FROM goods_image)"
+
+        if 'seasonList' in params:
+            seasons = request.args.getlist('seasonList')
+            season_query = None
+            for season in seasons:
+                if season_query:
+                    season_query = season_query + f" or season = '{season}'"
+                else:
+                    season_query = f"season = '{season}'"
+            if season_query:
+                if condition_query:
+                    condition_query = condition_query + f" and ({season_query})"
+                else:
+                    condition_query = f"WHERE ({season_query})"
         
         if 'searchType' in params:
             searchType = int(params['imageFlag'])
@@ -563,6 +577,13 @@ def goodsDetailAPIList(goodsTag):
     elif flask.request.method == 'POST':
         send_data = dict()
         status_code = status.HTTP_201_CREATED
+        query = f"SELECT * FROM goods WHERE goods_tag = '{goodsTag}';"
+        mysql_cursor.execute(query)
+        goods_row = mysql_cursor.fetchone()
+        if goods_row:
+            send_data = {"result": f"이미 {goodsTag} 라는 Tag는 사용 중입니다."}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return flask.make_response(flask.jsonify(send_data), status_code)
         try:
             request_body = json.loads(request.get_data())
             if not 'registerType' in request_body:
@@ -1069,7 +1090,7 @@ def getGoodsFirstCostList():
                         condition_query = f"WHERE size like '%{searchContent}%'"
         if condition_query:
             condition_query = condition_query + f" GROUP BY stocking_date, supplier_tag ORDER BY stocking_date DESC"
-            query = f"SELECT stocking_date, supplier_tag, bl_number, count(goods_tag), sum(first_cost), sum(management_cost), user_id FROM goods" + condition_query + limit_query 
+            query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods" + condition_query + limit_query 
         else:
             condition_query = f" GROUP BY stocking_date, supplier_tag ORDER BY stocking_date DESC"
             query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods" + condition_query + limit_query 
