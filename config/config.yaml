@@ -27,3 +27,6 @@ goods_management:
 etc_management:
   ip: 127.0.0.1
   port: 18006
+consignment_management:
+  ip: 127.0.0.1
+  port: 18007
