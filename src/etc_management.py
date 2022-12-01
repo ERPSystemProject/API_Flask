@@ -64,7 +64,7 @@ def getOfficeDropBoxList():
         params = request.args.to_dict()
 
         if 'keyword' in params:
-            query = f"SELECT office_tag, office_name FROM office WHERE office_tag > 0 and office_name like '%{keyword}%';"
+            query = f"SELECT office_tag, office_name FROM office WHERE office_tag > 0 and office_name like '%{params['keyword']}%';"
         else:
             query = "SELECT office_tag, office_name FROM office WHERE office_tag > 0;"
         mysql_cursor.execute(query)
@@ -85,6 +85,184 @@ def getOfficeDropBoxList():
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     finally:
         return flask.make_response(flask.jsonify(send_data), status_code)
+
+#brand 드롭박스 리스트 조회
+@app.route('/brands', methods=['GET'])
+def getBrandDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT brand_tag, brand_name FROM brand WHERE brand_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT brand_tag, brand_name FROM brand;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dataList = list()
+        for index, row in enumerate(rows):
+            data = dict()
+            data['index'] = index
+            data['brandTag'] = row[0]
+            data['brandName'] = row[1]
+            dataList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = dataList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#category 드롭박스 리스트 조회
+@app.route('/categories', methods=['GET'])
+def getCategoryDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT category_tag, category_name FROM category WHERE category_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT category_tag, category_name FROM category;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dataList = list()
+        for index, row in enumerate(rows):
+            data = dict()
+            data['index'] = index
+            data['categoryTag'] = row[0]
+            data['categoryName'] = row[1]
+            dataList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = dataList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#origin 드롭박스 리스트 조회
+@app.route('/origins', methods=['GET'])
+def getOriginDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT origin_name FROM origin WHERE origin_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT origin_name FROM origin;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dataList = list()
+        for index, row in enumerate(rows):
+            data = dict()
+            data['index'] = index
+            data['origin'] = row[0]
+            dataList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = dataList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#season 드롭박스 리스트 조회
+@app.route('/seasons', methods=['GET'])
+def getSeasonDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT season FROM season WHERE season like '%{params['keyword']}%';"
+        else:
+            query = "SELECT season FROM season;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dataList = list()
+        for index, row in enumerate(rows):
+            data = dict()
+            data['index'] = index
+            data['season'] = row[0]
+            dataList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = dataList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#supplier 드롭박스 리스트 조회
+@app.route('/suppliers', methods=['GET'])
+def getSupplierDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT supplier_tag, supplier_name FROM supplier WHERE supplier_tag > 0 and supplier_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT supplier_tag, supplier_name FROM supplier WHERE supplier_tag > 0;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dateList = list()
+        for row in rows:
+            data = dict()
+            data['supplierTag'] = row[0]
+            data['supplierName'] = row[1]
+            dateList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['list'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
 
 def setup_api_server():
 
