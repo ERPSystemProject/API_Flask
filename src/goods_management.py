@@ -343,6 +343,8 @@ def getGoodsList():
             image_row = mysql_cursor.fetchone()
             if image_row:
                 data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
+            else:
+                data['imageUrl'] = None
             goodsList.append(data)
 
         if condition_query:
@@ -557,12 +559,16 @@ def goodsDetailAPIList(goodsTag):
                 query = f"SELECT office_tag, name FROM user WHERE user_id = '{user_id}';"
                 mysql_cursor.execute(query)
                 user_row = mysql_cursor.fetchone()
-                user_office_tag = user_row[0]
-                history_data['userName'] = user_row[1]
+                if user_row:
+                    user_office_tag = user_row[0]
+                    history_data['userName'] = user_row[1]
 
-                query = f"SELECT office_name FROM office WHERE office_tag = {user_office_tag};"
-                user_office_row = mysql_cursor.fetchone()
-                history_data['officeName'] = user_office_row[0]
+                    query = f"SELECT office_name FROM office WHERE office_tag = {user_office_tag};"
+                    user_office_row = mysql_cursor.fetchone()
+                    history_data['officeName'] = user_office_row[0]
+                else:
+                    history_data['userName'] = user_id
+                    history_data['officeName'] = None
 
                 history_list.append(history_data)
 

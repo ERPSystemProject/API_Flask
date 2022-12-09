@@ -145,7 +145,7 @@ def getNoticeBoards():
         start = (int(page)-1) * int(limit)
 
         limit_query = f" limit {start}, {limit};"
-        condition_query = f" limit {start}, {limit};"
+        condition_query = f" ORDER BY index DESC limit {start}, {limit};"
         
         if 'searchType' in params and 'searchContent' in params:
             searchType = int(params['searchType'])
@@ -164,7 +164,7 @@ def getNoticeBoards():
                 return flask.make_response(flask.jsonify(send_data), status_code)
         else:
             condition_query = f" WHERE type = 0" + condition_query
-
+            
         query = f"SELECT community_board.index, title, user_id, register_date, view_count FROM community_board" + condition_query
         mysql_cursor.execute(query)
         board_rows = mysql_cursor.fetchall()
@@ -241,7 +241,7 @@ def getRequestBoards():
         start = (int(page)-1) * int(limit)
 
         limit_query = f" limit {start}, {limit};"
-        condition_query = f" limit {start}, {limit};"
+        condition_query = f"ORDER BY index DESC limit {start}, {limit};"
 
         if 'boardType' in params:
             boardType = int(params['boardType'])
@@ -381,6 +381,7 @@ def boardDetailApis(boardIndex):
             user_row = mysql_cursor.fetchone()
             data['writeOffice'] = user_row[0]
             data['writer'] = user_row[1]
+            data['writerUserId'] = user_id
 
             query = f"SELECT office_name FROM office WHERE office_tag in (SELECT office_tag FROM community_board_target WHERE community_board_target.index = {boardIndex});"
             mysql_cursor.execute(query)
@@ -401,11 +402,12 @@ def boardDetailApis(boardIndex):
                 commentUserId = comment_row[2]
                 comment_data['registerDate'] = comment_row[3]
 
-                query = f"SELECT office_tag, name FROM user WHERE user_id = '{user_id}';"
+                query = f"SELECT office_tag, name FROM user WHERE user_id = '{commentUserId}';"
                 mysql_cursor.execute(query)
                 user_row = mysql_cursor.fetchone()
                 comment_data['writeOffice'] = user_row[0]
                 comment_data['writer'] = user_row[1]
+                comment_data['writerUserId'] = commentUserId
                 
                 comments.append(comment_data)
             data['comments'] = comments
@@ -530,6 +532,10 @@ def boardPostFileApis(boardIndex):
         status_code = status.HTTP_201_CREATED
         try:
             files = flask.request.files.getlist("files")
+            if len(files) < 1:
+                send_data = {"result": "등록할 파일을 입력받지 못했습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
             filePath = f"/home/ubuntu/data/community_board/{boardIndex}/"
             for file in files:
                 file.save(filePath+file.filename)

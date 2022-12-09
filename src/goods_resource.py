@@ -385,12 +385,13 @@ class goodsImageApiList(Resource):
         args = upload_parser.parse_args()
         args['userId'] = id
         file_list = list()
-        upload_files = flask.request.files.getlist("files")
-        for upload_file in upload_files:
-            filename = upload_file.filename
-            file_ = upload_file.read()
-            type_ = upload_file.content_type
-            file_list.append(('files',(filename,file_,type_)))
+        for upload_file_info in flask.request.files:
+            upload_files = flask.request.files.getlist(upload_file_info)
+            for upload_file in upload_files:
+                filename = upload_file.filename
+                file_ = upload_file.read()
+                type_ = upload_file.content_type
+                file_list.append(('files',(filename,file_,type_)))
         res = requests.post(f"http://{management_url}/{goodsTag}/image", files=file_list, params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

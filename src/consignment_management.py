@@ -80,7 +80,7 @@ def consignmentList():
 
         if 'dateType' in params:
             dateType = int(params['dateType'])
-            if dateType < 0 or dateType > 2:
+            if dateType < 0 or dateType > 3:
                 send_data = {"result": "날짜 검색 구분이 올바르지 않습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
@@ -88,8 +88,10 @@ def consignmentList():
                 dateString = 'stocking_date'
             elif dateType == 1:
                 dateString = 'import_date'
-            else:
+            elif dateType == 2:
                 dateString = 'register_date'
+            else:
+                dateString = 'return_date'
             if 'startDate' in params:
                 startDate = params['startDate']
                 if condition_query:
@@ -314,6 +316,8 @@ def consignmentList():
             image_row = mysql_cursor.fetchone()
             if image_row:
                 data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
+            else:
+                data['imageUrl'] = None
 
             if return_date:
                 data['returnDate'] = return_date

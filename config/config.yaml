@@ -30,3 +30,6 @@ etc_management:
 consignment_management:
   ip: 127.0.0.1
   port: 18007
+move_management:
+  ip: 127.0.0.1
+  port: 18008

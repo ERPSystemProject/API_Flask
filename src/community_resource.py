@@ -83,6 +83,7 @@ comment_fields = community_ns.model('comment fields', {
     'commentIndex':fields.Integer(description='commentIndex',required=True,example=1),
     'writeOffice':fields.String(description='writeOffice',required=True,example='writeOffice'),
     'writer':fields.String(description='writer',required=True,example='writer'),
+    'writerUserId':fields.String(description='writer user id',required=True,example='admin'),
     'content':fields.String(description='content',required=True,example='content'),
     'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00')
 })
@@ -104,6 +105,7 @@ get_board_detail_fields = community_ns.model('board detail fields', {
     'content':fields.String(description='content',required=True,example='content'),
     'writeOffice':fields.String(description='writeOffice',required=True,example='writeOffice'),
     'writer':fields.String(description='writer',required=True,example='writer'),
+    'writerUserId':fields.String(description='writer user id',required=True,example='admin'),
     'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00'),
     'comments':fields.List(fields.Nested(comment_fields)),
     'fileList':fields.List(fields.Nested(file_fields))
@@ -261,12 +263,13 @@ class communityBoardFileApiList(Resource):
         post file of board
         '''
         file_list = list()
-        upload_files = flask.request.files.getlist("files")
-        for upload_file in upload_files:
-            filename = upload_file.filename
-            file_ = upload_file.read()
-            type_ = upload_file.content_type
-            file_list.append(('files',(filename,file_,type_)))
+        for upload_file_info in flask.request.files:
+            upload_files = flask.request.files.getlist(upload_file_info)
+            for upload_file in upload_files:
+                filename = upload_file.filename
+                file_ = upload_file.read()
+                type_ = upload_file.content_type
+                file_list.append(('files',(filename,file_,type_)))
         
         res = requests.post(f"http://{management_url}/{boardIndex}/file", files=file_list, timeout=3)
         result = json.loads(res.text)
