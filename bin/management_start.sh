@@ -36,6 +36,12 @@ echo "---------------------------------------------"
 ps -ef | grep move_management | grep -v grep
 echo "---------------------------------------------"
 
+echo "sale_management 시작"
+nohup python3 -u ../src/sale_management.py &
+echo "---------------------------------------------"
+ps -ef | grep sale_management | grep -v grep
+echo "---------------------------------------------"
+
 echo "etc_management 시작"
 nohup python3 -u ../src/etc_management.py &
 echo "---------------------------------------------"

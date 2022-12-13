@@ -71,6 +71,8 @@ goods_list_fields = goods_ns.model('goods list fields', {
     'origin':fields.String(description='origin',required=True,example='ITALY'),
     'saleDate':fields.String(description='sale date',required=True,example='2022-11-10'),
     'office':fields.String(description='office name',required=True,example='office'),
+    'status':fields.String(description='goods status',required=True,example='normal'),
+    'firstCost':fields.Integer(description='first cost',required=True,example=100000),
     'cost':fields.Integer(description='cost',required=True,example=0),
     'regularCost':fields.Integer(description='regular cost',required=True,example=1000000),
     'saleCost':fields.Integer(description='sale cost',required=True,example=900000),

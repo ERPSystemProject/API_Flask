@@ -73,12 +73,13 @@ def getOfficeDropBoxList():
         officeList = list()
         for office_row in office_rows:
             data = dict()
-            data['officeTag'] = office_row[0]
-            data['officeName'] = office_row[1]
+            data['tag'] = office_row[0]
+            data['name'] = office_row[1]
             officeList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = officeList
+        send_data['name'] = '영업소'
+        send_data['items'] = officeList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -106,15 +107,15 @@ def getBrandDropBoxList():
         rows = mysql_cursor.fetchall()
 
         dataList = list()
-        for index, row in enumerate(rows):
+        for row in rows:
             data = dict()
-            data['index'] = index
-            data['brandTag'] = row[0]
-            data['brandName'] = row[1]
+            data['tag'] = row[0]
+            data['name'] = row[1]
             dataList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = dataList
+        send_data['name'] = '브랜드'
+        send_data['items'] = dataList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -142,15 +143,15 @@ def getCategoryDropBoxList():
         rows = mysql_cursor.fetchall()
 
         dataList = list()
-        for index, row in enumerate(rows):
+        for row in rows:
             data = dict()
-            data['index'] = index
-            data['categoryTag'] = row[0]
-            data['categoryName'] = row[1]
+            data['tag'] = row[0]
+            data['name'] = row[1]
             dataList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = dataList
+        send_data['name'] = '상품 종류'
+        send_data['items'] = dataList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -178,14 +179,15 @@ def getOriginDropBoxList():
         rows = mysql_cursor.fetchall()
 
         dataList = list()
-        for index, row in enumerate(rows):
+        for row in rows:
             data = dict()
-            data['index'] = index
-            data['origin'] = row[0]
+            data['tag'] = row[0]
+            data['name'] = row[0]
             dataList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = dataList
+        send_data['name'] = '원산지'
+        send_data['items'] = dataList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -213,14 +215,15 @@ def getSeasonDropBoxList():
         rows = mysql_cursor.fetchall()
 
         dataList = list()
-        for index, row in enumerate(rows):
+        for row in rows:
             data = dict()
-            data['index'] = index
-            data['season'] = row[0]
+            data['tag'] = row[0]
+            data['name'] = row[0]
             dataList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = dataList
+        send_data['name'] = '시즌'
+        send_data['items'] = dataList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -250,12 +253,13 @@ def getSupplierDropBoxList():
         dateList = list()
         for row in rows:
             data = dict()
-            data['supplierTag'] = row[0]
-            data['supplierName'] = row[1]
+            data['tag'] = row[0]
+            data['name'] = row[1]
             dateList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['list'] = dateList
+        send_data['name'] = '공급처'
+        send_data['items'] = dateList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}
@@ -263,6 +267,89 @@ def getSupplierDropBoxList():
     finally:
         return flask.make_response(flask.jsonify(send_data), status_code)
 
+#sex 드롭박스 리스트 조회
+@app.route('/sex', methods=['GET'])
+def getSexDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        dateList = list()
+        rows = ['공용','남성','여성']
+        for index, row in enumerate(rows):
+            data = dict()
+            data['tag'] = index
+            data['name'] = row
+            dateList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '성별'
+        send_data['items'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#supplier type 드롭박스 리스트 조회
+@app.route('/supplierTypes', methods=['GET'])
+def getSupplierTypesDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        dateList = list()
+        rows = ['위탁','사입','직수입','미입고']
+        for index, row in enumerate(rows):
+            data = dict()
+            data['tag'] = index + 1
+            data['name'] = row
+            dateList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '공급처유형'
+        send_data['items'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#goods status 드롭박스 리스트 조회
+@app.route('/goodsStatus', methods=['GET'])
+def getGoodsStatusDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        dateList = list()
+        rows = ['스크래치','판매불가','폐기','정상재고','분실','정산대기','분배대기','회수완료','수선중','반품정산대기','판매완료','출고승인대기','고객반송대기']
+        for index, row in enumerate(rows):
+            data = dict()
+            data['tag'] = index + 1
+            data['name'] = row
+            dateList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '상품상태'
+        send_data['items'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
 
 def setup_api_server():
 

@@ -252,7 +252,7 @@ def moveList():
                 supplier_tag = goods_row[7]
                 data['color'] = goods_row[8]
                 data['season'] = goods_row[9]
-                data['sex'] = goods_row[10]
+                sex = int(goods_row[10]) 
                 data['size'] = goods_row[11]
                 data['material'] = goods_row[12]
                 data['stockingDate'] = goods_row[13]
@@ -263,6 +263,13 @@ def moveList():
                 data['saleCost'] = goods_row[18]
                 data['discountCost'] = goods_row[19]
                 data['managementCost'] = goods_row[20]
+
+                if sex == 0:
+                    data['sex'] = '공용'
+                elif sex == 1:
+                    data['sex'] = '남성'
+                else:
+                    data['sex'] = '여성'
 
                 query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
                 mysql_cursor.execute(query)
@@ -622,7 +629,7 @@ def approveList():
                 supplier_tag = goods_row[7]
                 data['color'] = goods_row[8]
                 data['season'] = goods_row[9]
-                data['sex'] = goods_row[10]
+                sex = int(goods_row[10])
                 data['size'] = goods_row[11]
                 data['material'] = goods_row[12]
                 data['stockingDate'] = goods_row[13]
@@ -639,6 +646,13 @@ def approveList():
                 register_type = int(goods_row[24])
                 data['moverName'] = goods_row[25]
                 data['approverName'] = goods_row[26]
+
+                if sex == 0:
+                    data['sex'] = '공용'
+                elif sex == 1:
+                    data['sex'] = '남성'
+                else:
+                    data['sex'] = '여성'
 
                 if register_type == 1:
                     data['registerType'] = '엑셀입력'
@@ -1026,7 +1040,7 @@ def statusOfficeDetailList():
                 data['goodsTag'] = status_row[4]
                 data['brand'] = status_row[5]
                 data['category'] = status_row[6]
-                data['sex'] = status_row[7]
+                sex = int(status_row[7]) 
                 data['color'] = status_row[8]
                 data['material'] = status_row[9]
                 data['size'] = status_row[10]
@@ -1046,6 +1060,13 @@ def statusOfficeDetailList():
                 move_status= int(status_row[24])
                 data['approveUser'] = status_row[25]
                 data['registerDate'] = status_row[26]
+
+                if sex == 0:
+                    data['sex'] = '공용'
+                elif sex == 1:
+                    data['sex'] = '남성'
+                else:
+                    data['sex'] = '여성'
 
                 query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{data['goodsTag']}'"
                 mysql_cursor.execute(query)
@@ -1519,7 +1540,7 @@ def statusPartNumberDetailList():
                 data['goodsTag'] = status_row[5]
                 data['brand'] = status_row[6]
                 data['category'] = status_row[7]
-                data['sex'] = status_row[8]
+                sex = int(status_row[8]) 
                 data['color'] = status_row[9]
                 data['material'] = status_row[10]
                 data['size'] = status_row[11]
@@ -1539,6 +1560,13 @@ def statusPartNumberDetailList():
                 move_status= int(status_row[25])
                 data['approveUser'] = status_row[26]
                 data['registerDate'] = status_row[27]
+
+                if sex == 0:
+                    data['sex'] = '공용'
+                elif sex == 1:
+                    data['sex'] = '남성'
+                else:
+                    data['sex'] = '여성'
 
                 query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{data['goodsTag']}'"
                 mysql_cursor.execute(query)

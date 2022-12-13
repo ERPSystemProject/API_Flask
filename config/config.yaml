@@ -33,3 +33,6 @@ consignment_management:
 move_management:
   ip: 127.0.0.1
   port: 18008
+sale_management:
+  ip: 127.0.0.1
+  port: 18009

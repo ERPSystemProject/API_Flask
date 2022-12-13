@@ -158,7 +158,7 @@ office_request_fields = system_ns.model('office system register fields', {
 seller_fields = system_ns.model('seller system fields', {
     'tag':fields.Integer(description='seller tag', required=True, example=1),
     'name':fields.String(description='seller name', required=True, example='Acc'),
-    'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:retail sale, 3:online, 4:home shopping', required=True, example=1)),
+    'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:retail sale, 3:online, 4:home shopping, 5:ETC', required=True, example=1)),
     'registrationName':fields.String(description='registration name', required=True, example='registrationName'),
     'registrationNumber':fields.String(description='registration number',required=True,example='111-11-11111'),
     'representative':fields.String(description='representative', required=True,example='representative'),
@@ -181,7 +181,7 @@ seller_response_fields = system_ns.model('seller system list response', {
 
 seller_request_fields = system_ns.model('seller system request fields', {
     'name':fields.String(description='seller name', required=True, example='Acc'),
-    'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:retail sale, 3:online, 4:home shopping', required=True, example=1)),
+    'sellingType':fields.List(fields.Integer(description='selling type | 1:wholesale, 2:retail sale, 3:online, 4:home shopping, 5:ETC', required=True, example=1)),
     'registrationName':fields.String(description='registration name', required=True, example='registrationName'),
     'registrationNumber':fields.String(description='registration number',required=True,example='111-11-11111'),
     'representative':fields.String(description='representative', required=True,example='representative'),

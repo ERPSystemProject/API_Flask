@@ -277,9 +277,9 @@ def getGoodsList():
                     else:
                         condition_query = f"WHERE size like '%{searchContent}%'"
         if condition_query:
-            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost FROM goods" + condition_query + limit_query + ';'
+            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods" + condition_query + limit_query + ';'
         else:
-            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost FROM goods" + limit_query + ';'
+            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods" + limit_query + ';'
         mysql_cursor.execute(query)
         goods_rows = mysql_cursor.fetchall()
 
@@ -307,6 +307,8 @@ def getGoodsList():
             data['saleCost'] = goods_row[18]
             data['discountCost'] = goods_row[19]
             data['managementCost'] = goods_row[20]
+            goods_status = int(goods_row[21])
+            data['firstCost'] = goods_row[22]
 
             query = f"SELECT brand_name FROM brand WHERE brand_tag = '{brand_tag}';"
             mysql_cursor.execute(query)
@@ -337,6 +339,33 @@ def getGoodsList():
                 data['supplierType'] = '직수입'
             elif supplier_type == 4:
                 data['supplierType'] = '미입고'
+
+            if goods_status == 1:
+                data['status'] = '스크래치'
+            elif goods_status == 2:
+                data['status'] = '판매불가'
+            elif goods_status == 3:
+                data['status'] = '폐기'
+            elif goods_status == 4:
+                data['status'] = '정상재고'
+            elif goods_status == 5:
+                data['status'] = '분실'
+            elif goods_status == 6:
+                data['status'] = '정산대기'
+            elif goods_status == 7:
+                data['status'] = '분배대기'
+            elif goods_status == 8:
+                data['status'] = '회수완료'
+            elif goods_status == 9:
+                data['status'] = '수선중'
+            elif goods_status == 10:
+                data['status'] = '반품정산대기'
+            elif goods_status == 11:
+                data['status'] = '판매완료'
+            elif goods_status == 12:
+                data['status'] = '출고승인대기'
+            else:
+                data['status'] = '고객반송대기'
 
             query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{data['tag']}';"
             mysql_cursor.execute(query)

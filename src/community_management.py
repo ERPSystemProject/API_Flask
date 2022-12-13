@@ -145,7 +145,7 @@ def getNoticeBoards():
         start = (int(page)-1) * int(limit)
 
         limit_query = f" limit {start}, {limit};"
-        condition_query = f" ORDER BY index DESC limit {start}, {limit};"
+        condition_query = f" ORDER BY community_board.index DESC limit {start}, {limit};"
         
         if 'searchType' in params and 'searchContent' in params:
             searchType = int(params['searchType'])
@@ -241,7 +241,7 @@ def getRequestBoards():
         start = (int(page)-1) * int(limit)
 
         limit_query = f" limit {start}, {limit};"
-        condition_query = f"ORDER BY index DESC limit {start}, {limit};"
+        condition_query = f" ORDER BY community_board.index DESC limit {start}, {limit};"
 
         if 'boardType' in params:
             boardType = int(params['boardType'])

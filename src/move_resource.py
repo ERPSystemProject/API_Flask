@@ -337,14 +337,14 @@ class moveApiList(Resource):
     @move_ns.response(201, 'OK', move_request_response_fields)
     @move_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     @jwt_required()
-    def post(self,goodsTag):
+    def post(self):
         '''
         request move goods
         '''
         id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         request_body['userId'] = id
-        res = requests.post(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
+        res = requests.post(f"http://{management_url}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
@@ -373,7 +373,7 @@ class approveApiList(Resource):
         approve move goods
         '''
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
-        res = requests.post(f"http://{management_url}/approve/{goodsTag}", data=json.dumps(request_body), timeout=3)
+        res = requests.post(f"http://{management_url}/approve", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
