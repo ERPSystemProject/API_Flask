@@ -198,7 +198,7 @@ def moveList():
                         condition_query = f"WHERE ({office_query})"
         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -560,7 +560,7 @@ def approveList():
                         condition_query = f"WHERE goods_tag ANY (SELECT goods_tag FROM goods_movement WHERE {office_query})"
         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -888,7 +888,7 @@ def statusOfficeList():
                         condition_query = f"WHERE ({office_query})"
         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -1295,7 +1295,7 @@ def statusPartNumberList():
                         condition_query = f" WHERE goods_tag IN (SELECT goods_tag FROM goods_movement WHERE {office_query})"
         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST

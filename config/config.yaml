@@ -36,3 +36,6 @@ move_management:
 sale_management:
   ip: 127.0.0.1
   port: 18009
+inventory_management:
+  ip: 127.0.0.1
+  port: 18010

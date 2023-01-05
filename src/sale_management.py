@@ -198,7 +198,7 @@ def saleList():
                         condition_query = f"WHERE ({office_query})"
         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -503,7 +503,7 @@ def soldList():
                         condition_query = f"WHERE ({office_query})"
                         
             if 'searchType' in params:
-                searchType = int(params['imageFlag'])
+                searchType = int(params['searchType'])
                 if searchType < 0 or searchType > 4:
                     send_data = {"result": "검색 구분이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -595,22 +595,22 @@ def soldList():
             if 'saleRegisterName' in params:
                 saleRegisterName = params['saleRegisterName']
                 if condition_query:
-                    condition_query += f" and goods_tag ANY (SELECT goods_tag FROM goods_sale WHERE user_id IN(SELECT user_id FROM user WHERE user_name like '%{saleRegisterName}%'))"
+                    condition_query += f" and goods_tag ANY (SELECT goods_tag FROM goods_sale WHERE user_id IN(SELECT user_id FROM user WHERE user.name like '%{saleRegisterName}%'))"
                 else:
-                    condition_query = f"WHERE goods_tag ANY (SELECT goods_tag FROM goods_sale WHERE user_id IN(SELECT user_id FROM user WHERE user_name like '%{saleRegisterName}%'))"
+                    condition_query = f"WHERE goods_tag ANY (SELECT goods_tag FROM goods_sale WHERE user_id IN(SELECT user_id FROM user WHERE user.name like '%{saleRegisterName}%'))"
 
             if condition_query:
                 condition_query = condition_query + ' ORDER BY goods_sale.sale_date DESC'
                 query = f"SELECT goods_sale.sale_date, (SELECT office_name FROM office WHERE goods.office_tag = office.office_tag) as office, stocking_date, import_date, (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, bl_number, season, "
                 query += f"(SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, (SELECT category_name FROM category WHERE goods.category_tag = category.category_tag) as category, part_number, goods.goods_tag, sex, color, material, "
                 query += f"size, origin_name, goods.cost, first_cost, regular_cost, sale_cost, discount_cost, goods_sale.cost, goods_sale.commission_rate, goods_sale.seller_tag, goods_sale.order_number, goods_sale.invoice_number, goods_sale.receiver_name, goods_sale.receiver_phone_number, "
-                query += f"goods_sale.receiver_address, goods_sale.description, goods_sale.customer, (SELECT user_name FROM user WHERE goods_sale.user_id = user.user_id) as registerName, register_type FROM goods, goods_sale " + condition_query + limit_query + ';'
+                query += f"goods_sale.receiver_address, goods_sale.description, goods_sale.customer, (SELECT user.name FROM user WHERE goods_sale.user_id = user.user_id) as registerName, register_type FROM goods, goods_sale " + condition_query + limit_query
             else:
                 condition_query = ' ORDER BY goods_sale.sale_date DESC'
                 query = f"SELECT goods_sale.sale_date, (SELECT office_name FROM office WHERE goods.office_tag = office.office_tag) as office, stocking_date, import_date, (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, bl_number, season, "
                 query += f"(SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, (SELECT category_name FROM category WHERE goods.category_tag = category.category_tag) as category, part_number, goods.goods_tag, sex, color, material, "
                 query += f"size, origin_name, goods.cost, first_cost, regular_cost, sale_cost, discount_cost, goods_sale.cost, goods_sale.commission_rate, goods_sale.seller_tag, goods_sale.order_number, goods_sale.invoice_number, goods_sale.receiver_name, goods_sale.receiver_phone_number, "
-                query += f"goods_sale.receiver_address, goods_sale.description, goods_sale.customer, (SELECT user_name FROM user WHERE goods_sale.user_id = user.user_id) as registerName, register_type FROM goods, goods_sale " + condition_query + limit_query + ';'
+                query += f"goods_sale.receiver_address, goods_sale.description, goods_sale.customer, (SELECT user.name FROM user WHERE goods_sale.user_id = user.user_id) as registerName, register_type FROM goods, goods_sale " + condition_query + limit_query
             mysql_cursor.execute(query)
             goods_rows = mysql_cursor.fetchall()
 
@@ -723,16 +723,16 @@ def soldList():
                 goodsList.append(data)
 
             if condition_query:
-                query = f"SELECT count(*) FROM goods, goods_movement" + condition_query + ';'
+                query = f"SELECT count(*) FROM goods, goods_sale" + condition_query + ';'
             else:
-                query = f"SELECT count(*) FROM goods, goods_movement;"
+                query = f"SELECT count(*) FROM goods, goods_sale;"
             mysql_cursor.execute(query)
             count_row = mysql_cursor.fetchone()
 
             send_data['result'] = 'SUCCESS'
             send_data['list'] = goodsList
             send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
-            send_data['totalMove'] = int(count_row[0])
+            send_data['totalResult'] = int(count_row[0])
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}
@@ -886,7 +886,7 @@ def returnSaleList(goodsTag):
             query += f"VALUES ('{goodsTag}',{index},'반품처리',4,{register_type},'{user_id}',CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
-            query = f"UPDATE goods SET goods.status = 4, sale_date = NULL WHERE goods_tag = '{goodsTag}';"
+            query = f"UPDATE goods SET goods.status = 4, sale_date = NULL, return_date = CURRENT_TIMESTAMP WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
 
         except Exception as e:

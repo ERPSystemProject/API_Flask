@@ -215,7 +215,7 @@ def consignmentList():
                     condition_query = f"WHERE ({status_query})"
         
         if 'searchType' in params:
-            searchType = int(params['imageFlag'])
+            searchType = int(params['searchType'])
             if searchType < 0 or searchType > 4:
                 send_data = {"result": "검색 구분이 올바르지 않습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -854,7 +854,17 @@ def consignmentDetailAPIList(goodsTag):
             status_row = mysql_cursor.fetchone()
             goods_status = status_row[0]
 
-            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', 1, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+            query = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{request_body['goodsTag']}';"
+            mysql_cursor.execute(query)
+            index_row = mysql_cursor.fetchone()
+            if not index_row:
+                index = 1
+            elif not index_row[0]:
+                index = 1
+            else:
+                index = index_row[0] + 1
+
+            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', {index}, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
         except Exception as e:
@@ -957,7 +967,7 @@ def getConsignmentCalculateList():
                     condition_query = f"WHERE ({supplier_query})"
 
         if 'searchType' in params:
-            searchType = int(params['imageFlag'])
+            searchType = int(params['searchType'])
             if searchType < 0 or searchType > 4:
                 send_data = {"result": "검색 구분이 올바르지 않습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -1277,10 +1287,23 @@ def returnConsignmentList(goodsTag):
         params = request.args.to_dict()
         user_id = params['userId']
 
-        query = f"UPDATE goods SET status = 8, user_id = '{user_id}' WHERE goods_tag = '{goodsTag}';"
+        query = f"UPDATE goods SET consignment_flag = 0, office_tag = 1, consignment_return_date = CURRENT_TIMESTAMP, status = 4, user_id = '{user_id}' WHERE goods_tag = '{goodsTag}';"
         mysql_cursor.execute(query)
 
-        query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', 1, '회수작업완료', 8, '{user_id}', CURRENT_TIMESTAMP);"
+        query = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{goodsTag}';"
+        mysql_cursor.execute(query)
+        index_row = mysql_cursor.fetchone()
+        if not index_row:
+            index = 1
+        elif not index_row[0]:
+            index = 1
+        else:
+            index = index_row[0] + 1
+
+        query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', {index}, '회수작업완료', 8, '{user_id}', CURRENT_TIMESTAMP);"
+        mysql_cursor.execute(query)
+
+        query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', {index+1}, '회수작업으로 정상재고 처리', 4, '{user_id}', CURRENT_TIMESTAMP);"
         mysql_cursor.execute(query)
 
         send_data['result'] = 'SUCCESS'

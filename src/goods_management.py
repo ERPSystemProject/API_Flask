@@ -244,7 +244,7 @@ def getGoodsList():
                     condition_query = f"WHERE ({season_query})"
         
         if 'searchType' in params:
-            searchType = int(params['imageFlag'])
+            searchType = int(params['searchType'])
             if searchType < 0 or searchType > 4:
                 send_data = {"result": "검색 구분이 올바르지 않습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -296,7 +296,7 @@ def getGoodsList():
             supplier_tag = goods_row[7]
             data['color'] = goods_row[8]
             data['season'] = goods_row[9]
-            data['sex'] = goods_row[10]
+            sex = int(goods_row[10])
             data['size'] = goods_row[11]
             data['material'] = goods_row[12]
             data['stockingDate'] = goods_row[13]
@@ -329,6 +329,14 @@ def getGoodsList():
             mysql_cursor.execute(query)
             supplier_row = mysql_cursor.fetchone()
             data['supplierName'] = supplier_row[0]
+            
+            if sex == 0:
+                data['sex'] = '공용'
+            elif sex == 1:
+                data['sex'] = '남성'
+            else:
+                data['sex'] = '여성'
+
             #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
             supplier_type = int(supplier_row[1])
             if supplier_type == 1:
@@ -415,7 +423,7 @@ def goodsDetailAPIList(goodsTag):
         send_data = dict()
         status_code = status.HTTP_200_OK
         try:
-            query = f"SELECT stocking_date, import_date, register_date, supplier_tag, office_tag, part_number, brand_tag, category_tag, origin_name, sex, color, size, material, season, bl_number, description, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, first_cost FROM goods WHERE goods_tag = '{goodsTag}';"
+            query = f"SELECT stocking_date, import_date, register_date, supplier_tag, office_tag, part_number, brand_tag, category_tag, origin_name, sex, color, size, material, season, bl_number, description, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, first_cost, goods.status FROM goods WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
             goods_info_row = mysql_cursor.fetchone()
             baseInfo = dict()
@@ -446,13 +454,52 @@ def goodsDetailAPIList(goodsTag):
             costInfo['departmentStoreCost'] = goods_info_row[23]
             costInfo['outletCost'] = goods_info_row[24]
             costInfo['firstCost'] = goods_info_row[25]
+            goods_status = int(goods_info_row[26])
 
-            query = f"SELECT supplier_name FROM supplier WHERE supplier_tag = {supplier_tag};"
+            query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = {supplier_tag};"
             mysql_cursor.execute(query)
             supplier_row = mysql_cursor.fetchone()
             baseInfo['supplier'] = supplier_row[0]
+            supplier_type = int(supplier_row[1])
+            
+            #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
+            if supplier_type == 1:
+                baseInfo['supplierType'] = '위탁'
+            elif supplier_type == 2:
+                baseInfo['supplierType'] = '사입'
+            elif supplier_type == 3:
+                baseInfo['supplierType'] = '직수입'
+            elif supplier_type == 4:
+                baseInfo['supplierType'] = '미입고'
 
-            query = f"SELECT office_name FROM supplier WHERE office_tag = {office_tag};"
+            if goods_status == 1:
+                baseInfo['status'] = '스크래치'
+            elif goods_status == 2:
+                baseInfo['status'] = '판매불가'
+            elif goods_status == 3:
+                baseInfo['status'] = '폐기'
+            elif goods_status == 4:
+                baseInfo['status'] = '정상재고'
+            elif goods_status == 5:
+                baseInfo['status'] = '분실'
+            elif goods_status == 6:
+                baseInfo['status'] = '정산대기'
+            elif goods_status == 7:
+                baseInfo['status'] = '분배대기'
+            elif goods_status == 8:
+                baseInfo['status'] = '회수완료'
+            elif goods_status == 9:
+                baseInfo['status'] = '수선중'
+            elif goods_status == 10:
+                baseInfo['status'] = '반품정산대기'
+            elif goods_status == 11:
+                baseInfo['status'] = '판매완료'
+            elif goods_status == 12:
+                baseInfo['status'] = '출고승인대기'
+            else:
+                baseInfo['status'] = '고객반송대기'
+
+            query = f"SELECT office_name FROM office WHERE office_tag = {office_tag};"
             mysql_cursor.execute(query)
             office_row = mysql_cursor.fetchone()
             baseInfo['office'] = office_row[0]
@@ -577,7 +624,10 @@ def goodsDetailAPIList(goodsTag):
                 elif goods_status == 13:
                     history_data['status'] = '고객반송대기'
                 history_data['updateValue'] = history_row[4]
-                method = int(history_row[5])
+                if not history_row[5]:
+                    method = 3
+                else:
+                    method = int(history_row[5])
                 if method == 1:
                     history_data['updateMethod'] = '엑셀입력'
                 elif method == 2:
@@ -594,7 +644,10 @@ def goodsDetailAPIList(goodsTag):
 
                     query = f"SELECT office_name FROM office WHERE office_tag = {user_office_tag};"
                     user_office_row = mysql_cursor.fetchone()
-                    history_data['officeName'] = user_office_row[0]
+                    if user_office_row:
+                        history_data['officeName'] = user_office_row[0]
+                    else:
+                        history_data['officeName'] = None
                 else:
                     history_data['userName'] = user_id
                     history_data['officeName'] = None
@@ -907,7 +960,17 @@ def goodsDetailAPIList(goodsTag):
             status_row = mysql_cursor.fetchone()
             goods_status = status_row[0]
 
-            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', 1, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+            query = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{request_body['goodsTag']}';"
+            mysql_cursor.execute(query)
+            index_row = mysql_cursor.fetchone()
+            if not index_row:
+                index = 1
+            elif not index_row[0]:
+                index = 1
+            else:
+                index = index_row[0] + 1
+
+            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', {index}, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
         except Exception as e:
@@ -1091,7 +1154,7 @@ def getGoodsFirstCostList():
                     condition_query = f"WHERE ({season_query})"
         
         if 'searchType' in params:
-            searchType = int(params['imageFlag'])
+            searchType = int(params['searchType'])
             if searchType < 0 or searchType > 4:
                 send_data = {"result": "검색 구분이 올바르지 않습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
