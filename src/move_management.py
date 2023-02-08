@@ -130,16 +130,23 @@ def moveList():
                     else:
                         condition_query = f"WHERE ({category_query})"
 
-            if 'sex' in params:
-                sex = int(params['sex'])
-                if sex < 0 or sex > 2:
-                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    return flask.make_response(flask.jsonify(send_data), status_code)
-                if condition_query:
-                    condition_query = condition_query + f" and sex = {sex}"
-                else:
-                    condition_query = f"WHERE sex = {sex}"
+            if 'sexList' in params:
+                sexList = request.args.getlist('sexList')
+                sex_query = None
+                for sex in sexList:
+                    if sex < 0 or sex > 2:
+                        send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if sex_query:
+                        sex_query = sex_query + f" or sex = {sex}"
+                    else:
+                        sex_query = f"sex = {sex}"
+                if sex_query:
+                    if condition_query:
+                        condition_query = condition_query + f" and ({sex_query})"
+                    else:
+                        condition_query = f"WHERE ({sex_query})"
 
             if 'originList' in params:
                 origins = request.args.getlist('originList')
@@ -232,79 +239,87 @@ def moveList():
                             condition_query = f"WHERE size like '%{searchContent}%'"
             if condition_query:
                 condition_query = condition_query + ' ORDER BY brand'
-                query = f"SELECT goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost FROM goods " + condition_query + limit_query + ';'
+                query = f"SELECT goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, first_cost FROM goods " + condition_query + limit_query + ';'
             else:
                 condition_query = ' ORDER BY brand'
-                query = f"SELECT goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost FROM goods " + condition_query + limit_query + ';'
+                query = f"SELECT goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, first_cost FROM goods " + condition_query + limit_query + ';'
             mysql_cursor.execute(query)
             goods_rows = mysql_cursor.fetchall()
 
-            goodsList = list()
-            for goods_row in goods_rows:
-                data = dict()
-                data['tag'] = goods_row[0]
-                data['partNumber'] = goods_row[1]
-                data['blNumber'] = goods_row[2]
-                data['origin'] = goods_row[3]
-                data['brand'] = goods_row[4]
-                category_tag = goods_row[5]
-                office_tag = goods_row[6]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','영업소','COST','원가','정상판매가','판매가','특별할인가']
+            send_data['table']['rows'] = list()
+
+            for index, goods_row in enumerate(goods_rows):
+                data = list()
+                tag = goods_row[0]
+                data.append(start+index+1)
+                data.append(goods_row[13])
+                data.append(goods_row[14])
+
                 supplier_tag = goods_row[7]
-                data['color'] = goods_row[8]
-                data['season'] = goods_row[9]
-                sex = int(goods_row[10]) 
-                data['size'] = goods_row[11]
-                data['material'] = goods_row[12]
-                data['stockingDate'] = goods_row[13]
-                data['importDate'] = goods_row[14]
-                data['saleDate'] = goods_row[15]
-                data['cost'] = goods_row[16]
-                data['regularCost'] = goods_row[17]
-                data['saleCost'] = goods_row[18]
-                data['discountCost'] = goods_row[19]
-                data['managementCost'] = goods_row[20]
-
-                if sex == 0:
-                    data['sex'] = '공용'
-                elif sex == 1:
-                    data['sex'] = '남성'
-                else:
-                    data['sex'] = '여성'
-
-                query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
-                mysql_cursor.execute(query)
-                category_row = mysql_cursor.fetchone()
-                data['category'] = category_row[0]
-
-                query = f"SELECT office_name FROM office WHERE office_tag = {office_tag};"
-                mysql_cursor.execute(query)
-                office_row = mysql_cursor.fetchone()
-                data['office'] = office_row[0]
-
                 query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
                 mysql_cursor.execute(query)
                 supplier_row = mysql_cursor.fetchone()
-                data['supplierName'] = supplier_row[0]
                 #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
                 supplier_type = int(supplier_row[1])
                 if supplier_type == 1:
-                    data['supplierType'] = '위탁'
+                    data.append('위탁')
                 elif supplier_type == 2:
-                    data['supplierType'] = '사입'
+                    data.append('사입')
                 elif supplier_type == 3:
-                    data['supplierType'] = '직수입'
-                elif supplier_type == 4:
-                    data['supplierType'] = '미입고'
+                    data.append('직수입')
+                else:
+                    data.append('미입고')
+                data.append(supplier_row[0])
+                data.append(goods_row[2])
+                data.append(goods_row[9])
 
-                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{data['tag']}';"
+                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{tag}';"
                 mysql_cursor.execute(query)
                 image_row = mysql_cursor.fetchone()
                 if image_row:
-                    data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
+                    data.append(image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/'))
                 else:
-                    data['imageUrl'] = None
+                    data.append(None)
+                
+                data.append(goods_row[4])
 
-                goodsList.append(data)
+                category_tag = goods_row[5]
+                query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
+                mysql_cursor.execute(query)
+                category_row = mysql_cursor.fetchone()
+                data.append(category_row[0])
+
+                data.append(goods_row[1])
+                data.append(tag)
+
+                sex = int(goods_row[10]) 
+                if sex == 0:
+                    data.append('공용')
+                elif sex == 1:
+                    data.append('남성')
+                else:
+                    data.append('여성')
+
+                data.append(goods_row[8])
+                data.append(goods_row[12])
+                data.append(goods_row[11])
+                data.append(goods_row[3])
+                
+                office_tag = goods_row[6]
+                query = f"SELECT office_name FROM office WHERE office_tag = {office_tag};"
+                mysql_cursor.execute(query)
+                office_row = mysql_cursor.fetchone()
+                data.append(office_row[0])
+                
+                data.append(goods_row[16])
+                data.append(goods_row[21])
+                data.append(goods_row[17])
+                data.append(goods_row[18])
+                data.append(goods_row[19])
+
+                send_data['table']['rows'].append(data)
 
             if condition_query:
                 query = f"SELECT count(*) FROM goods" + condition_query.replace('ORDER BY brand','') + ';'
@@ -314,7 +329,6 @@ def moveList():
             count_row = mysql_cursor.fetchone()
 
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = goodsList
             send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
             send_data['totalMove'] = int(count_row[0])
 
@@ -370,7 +384,11 @@ def moveList():
             user_id = request_body['userId']
 
             for goods_tag in goodsTagList:
-                query = f"INSERT INTO goods_movement (goods_tag, from_office_tag, to_office_tag, export_date, status, description, mover_user, approver_user, user_id, register_type, register_date) "
+                
+                query = f"DELETE FROM goods_movement WHERE goods_tag = '{goods_tag}';"
+                mysql_cursor.execute(query)
+
+                query = f"INSERT INTO goods_movement (goods_tag, from_office_tag, to_office_tag, export_date, status, description, move_user, approver_user, user_id, register_type, register_date) "
                 query += f"VALUES ('{goods_tag}', {from_office_tag}, {to_office_tag}, '{export_date}', 0, '{description}', '{move_user}', '{approver_user}', '{user_id}', {register_type}, CURRENT_TIMESTAMP);"
                 mysql_cursor.execute(query)
                 
@@ -384,12 +402,15 @@ def moveList():
                 else:
                     index = index_row[0] + 1
 
-                query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date "
+                query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date) "
                 query += f"VALUES ('{goods_tag}',{index},'출고요청',12,{register_type},'{user_id}',CURRENT_TIMESTAMP);"
                 mysql_cursor.execute(query)
 
                 query = f"UPDATE goods SET goods.status = 12 WHERE goods_tag = '{goods_tag}';"
                 mysql_cursor.execute(query)
+
+            send_data['result'] = "SUCCESS"
+            send_data['tags'] = goodsTagList
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}
@@ -478,16 +499,23 @@ def approveList():
                     else:
                         condition_query = f"WHERE ({category_query})"
 
-            if 'sex' in params:
-                sex = int(params['sex'])
-                if sex < 0 or sex > 2:
-                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    return flask.make_response(flask.jsonify(send_data), status_code)
-                if condition_query:
-                    condition_query = condition_query + f" and sex = {sex}"
-                else:
-                    condition_query = f"WHERE sex = {sex}"
+            if 'sexList' in params:
+                sexList = request.args.getlist('sexList')
+                sex_query = None
+                for sex in sexList:
+                    if sex < 0 or sex > 2:
+                        send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if sex_query:
+                        sex_query = sex_query + f" or sex = {sex}"
+                    else:
+                        sex_query = f"sex = {sex}"
+                if sex_query:
+                    if condition_query:
+                        condition_query = condition_query + f" and ({sex_query})"
+                    else:
+                        condition_query = f"WHERE ({sex_query})"
 
             if 'originList' in params:
                 origins = request.args.getlist('originList')
@@ -596,120 +624,129 @@ def approveList():
             if 'moveUserName' in params:
                 mover = params['moveUserName']
                 if condition_query:
-                    condition_query += f" and goods_tag ANY (SELECT goods_tag FROM goods_movement WHERE move_user like '%{mover}%')"
+                    condition_query += f" and goods_movement.goods_tag IN (SELECT goods_movement.goods_tag FROM goods_movement WHERE move_user like '%{mover}%')"
                 else:
-                    condition_query = f"WHERE goods_tag ANY (SELECT goods_tag FROM goods_movement WHERE move_user like '%{mover}%')"
+                    condition_query = f"WHERE goods_movement.goods_tag IN (SELECT goods_movement.goods_tag FROM goods_movement WHERE move_user like '%{mover}%')"
             
             if 'approveUserName' in params:
                 approver = params['approveUserName']
                 if condition_query:
-                    condition_query += f" and goods_tag ANY (SELECT goods_tag FROM goods_movement WHERE approver_user like '%{approver}%')"
+                    condition_query += f" and goods_movement.goods_tag IN (SELECT goods_movement.goods_tag FROM goods_movement WHERE approver_user like '%{approver}%')"
                 else:
-                    condition_query = f"WHERE goods_tag ANY (SELECT goods_tag FROM goods_movement WHERE approver_user like '%{approver}%')"
+                    condition_query = f"WHERE goods_movement.goods_tag IN (SELECT goods_movement.goods_tag FROM goods_movement WHERE approver_user like '%{approver}%')"
 
             if condition_query:
                 condition_query = condition_query + ' ORDER BY export_date DESC'
-                query = f"SELECT goods.goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, export_date, from_office_tag, to_office_tag, goods_movement.register_type, move_user, approver_user, goods_movement.description FROM goods, goods_movement" + condition_query + limit_query + ';'
+                query = f"SELECT goods.goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, export_date, from_office_tag, to_office_tag, goods_movement.register_type, move_user, approver_user, goods_movement.description, first_cost FROM goods, goods_movement " + condition_query + limit_query + ';'
             else:
                 condition_query = ' ORDER BY export_date DESC ORDER BY export_date DESC'
-                query = f"SELECT goods.goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, export_date, from_office_tag, to_office_tag, goods_movement.register_type, move_user, approver_user, goods_movement.description FROM goods, goods_movement" + condition_query + limit_query + ';'
+                query = f"SELECT goods.goods_tag, part_number, bl_number, origin_name, (SELECT brand.brand_name FROM brand WHERE goods.brand_tag = brand.brand_tag) as brand, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, export_date, from_office_tag, to_office_tag, goods_movement.register_type, move_user, approver_user, goods_movement.description, first_cost FROM goods, goods_movement " + condition_query + limit_query + ';'
             mysql_cursor.execute(query)
             goods_rows = mysql_cursor.fetchall()
 
-            goodsList = list()
-            for goods_row in goods_rows:
-                data = dict()
-                data['tag'] = goods_row[0]
-                data['partNumber'] = goods_row[1]
-                data['blNumber'] = goods_row[2]
-                data['origin'] = goods_row[3]
-                data['brand'] = goods_row[4]
-                category_tag = goods_row[5]
-                office_tag = goods_row[6]
-                supplier_tag = goods_row[7]
-                data['color'] = goods_row[8]
-                data['season'] = goods_row[9]
-                sex = int(goods_row[10])
-                data['size'] = goods_row[11]
-                data['material'] = goods_row[12]
-                data['stockingDate'] = goods_row[13]
-                data['importDate'] = goods_row[14]
-                data['saleDate'] = goods_row[15]
-                data['cost'] = goods_row[16]
-                data['regularCost'] = goods_row[17]
-                data['saleCost'] = goods_row[18]
-                data['discountCost'] = goods_row[19]
-                data['managementCost'] = goods_row[20]
-                data['exportDate'] = goods_row[21]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','출고일','출발 영업소','도착 영업소','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','입력방식','출고자','승인자','메모','cost','원가','정상판매가','판매가','특별할인가']
+            send_data['table']['rows'] = list()
+
+            for index, goods_row in enumerate(goods_rows):
+                data = list()
+                tag = goods_row[0]
+                data.append(start+index+1)
+                data.append(goods_row[21])
+                
                 from_office_tag = goods_row[22]
                 to_office_tag = goods_row[23]
-                register_type = int(goods_row[24])
-                data['moverName'] = goods_row[25]
-                data['approverName'] = goods_row[26]
-
-                if sex == 0:
-                    data['sex'] = '공용'
-                elif sex == 1:
-                    data['sex'] = '남성'
-                else:
-                    data['sex'] = '여성'
-
-                if register_type == 1:
-                    data['registerType'] = '엑셀입력'
-                elif register_type == 2:
-                    data['registerType'] = '일괄입력'
-                else:
-                    data['registerType'] = '직접입력'
-
-                query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
-                mysql_cursor.execute(query)
-                category_row = mysql_cursor.fetchone()
-                data['category'] = category_row[0]
-
                 query = f"SELECT office_name FROM office WHERE office_tag = {from_office_tag};"
                 mysql_cursor.execute(query)
                 office_row = mysql_cursor.fetchone()
-                data['fromOffice'] = office_row[0]
+                data.append(office_row[0])
 
                 query = f"SELECT office_name FROM office WHERE office_tag = {to_office_tag};"
                 mysql_cursor.execute(query)
                 office_row = mysql_cursor.fetchone()
-                data['toOffice'] = office_row[0]
+                data.append(office_row[0])
 
+                data.append(goods_row[13])
+                data.append(goods_row[14])
+
+                supplier_tag = goods_row[7]
                 query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
                 mysql_cursor.execute(query)
                 supplier_row = mysql_cursor.fetchone()
-                data['supplierName'] = supplier_row[0]
                 #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
                 supplier_type = int(supplier_row[1])
                 if supplier_type == 1:
-                    data['supplierType'] = '위탁'
+                    data.append('위탁')
                 elif supplier_type == 2:
-                    data['supplierType'] = '사입'
+                    data.append('사입')
                 elif supplier_type == 3:
-                    data['supplierType'] = '직수입'
+                    data.append('직수입')
                 elif supplier_type == 4:
-                    data['supplierType'] = '미입고'
+                    data.append('미입고')
+                data.append(supplier_row[0])
 
-                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{data['tag']}';"
+                data.append(goods_row[2])
+                data.append(goods_row[9])
+                
+                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{tag}';"
                 mysql_cursor.execute(query)
                 image_row = mysql_cursor.fetchone()
                 if image_row:
-                    data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
+                    data.append(image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/'))
                 else:
-                    data['imageUrl'] = None
+                    data.append(None)
 
-                goodsList.append(data)
+                data.append(goods_row[4])
+                
+                category_tag = goods_row[5]
+                query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
+                mysql_cursor.execute(query)
+                category_row = mysql_cursor.fetchone()
+                data.append(category_row[0])
+
+                data.append(goods_row[1])
+                data.append(tag)
+                
+                sex = int(goods_row[10])
+                if sex == 0:
+                    data.append('공용')
+                elif sex == 1:
+                    data.append('남성')
+                else:
+                    data.append('여성')
+
+                data.append(goods_row[8])
+                data.append(goods_row[12])
+                data.append(goods_row[11])
+                data.append(goods_row[3])
+                
+                register_type = int(goods_row[24])
+                if register_type == 1:
+                    data.append('엑셀입력')
+                elif register_type == 2:
+                    data.append('일괄입력')
+                else:
+                    data.append('직접입력')
+
+                data.append(goods_row[25])
+                data.append(goods_row[26])
+                data.append(goods_row[27])
+                data.append(goods_row[16])
+                data.append(goods_row[28])
+                data.append(goods_row[17])
+                data.append(goods_row[18])
+                data.append(goods_row[19])
+
+                send_data['table']['rows'].append(data)
 
             if condition_query:
-                query = f"SELECT count(*) FROM goods, goods_movement" + condition_query + ';'
+                query = f"SELECT count(*) FROM goods, goods_movement " + condition_query + ';'
             else:
                 query = f"SELECT count(*) FROM goods, goods_movement;"
             mysql_cursor.execute(query)
             count_row = mysql_cursor.fetchone()
 
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = goodsList
             send_data['totalPage'] = int(int(count_row[0])/int(limit)) + 1
             send_data['totalMove'] = int(count_row[0])
 
@@ -734,10 +771,11 @@ def approveList():
             goodsTagList = request_body['goodsTagList']
 
             for goods_tag in goodsTagList:
-                query = f"SELECT approver_user FROM goods_movement WHERE goods_tag = '{goods_tag}';"
+                query = f"SELECT approver_user, to_office_tag FROM goods_movement WHERE goods_tag = '{goods_tag}';"
                 mysql_cursor.execute(query)
                 approver_row = mysql_cursor.fetchone()
                 approver_name = approver_row[0]
+                to_office_tag = approver_row[1]
                 
                 query = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{goods_tag}';"
                 mysql_cursor.execute(query)
@@ -749,15 +787,18 @@ def approveList():
                 else:
                     index = index_row[0] + 1
 
-                query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date "
+                query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date) "
                 query += f"VALUES ('{goods_tag}',{index},'출고승인',4,{approveType},'{approver_name}',CURRENT_TIMESTAMP);"
                 mysql_cursor.execute(query)
 
-                query = f"UPDATE goods SET goods.status = 4 WHERE goods_tag = '{goods_tag}';"
+                query = f"UPDATE goods SET goods.status = 4, office_tag = {to_office_tag} WHERE goods_tag = '{goods_tag}';"
                 mysql_cursor.execute(query)
 
                 query = f"UPDATE goods_movement SET goods_movement.status = 1 WHERE goods_tag = '{goods_tag}';"
                 mysql_cursor.execute(query)
+
+            send_data['result'] = "SUCCESS"
+            send_data['tags'] = goodsTagList
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}
@@ -834,16 +875,23 @@ def statusOfficeList():
                     else:
                         condition_query = f"WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE {category_query})"
 
-            if 'sex' in params:
-                sex = int(params['sex'])
-                if sex < 0 or sex > 2:
-                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    return flask.make_response(flask.jsonify(send_data), status_code)
-                if condition_query:
-                    condition_query = condition_query + f" and goods_tag IN (SELECT goods_tag FROM goods WHERE sex = {sex})"
-                else:
-                    condition_query = f"WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE sex = {sex})"
+            if 'sexList' in params:
+                sexList = request.args.getlist('sexList')
+                sex_query = None
+                for sex in sexList:
+                    if sex < 0 or sex > 2:
+                        send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if sex_query:
+                        sex_query = sex_query + f" or sex = {sex}"
+                    else:
+                        sex_query = f"sex = {sex}"
+                if sex_query:
+                    if condition_query:
+                        condition_query = condition_query + f" and goods_tag IN (SELECT goods_tag FROM goods WHERE {sex_query})"
+                    else:
+                        condition_query = f"WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE {sex_query})"
 
             if 'originList' in params:
                 origins = request.args.getlist('originList')
@@ -922,8 +970,8 @@ def statusOfficeList():
                             condition_query = f"WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE size like '%{searchContent}%')"
             
             if 'approve' in params:
-                approve = params['approve']
-                if approve < 0 or approve >1:
+                approve = int(params['approve'])
+                if approve < 0 or approve > 1:
                     send_data = {"result": "승인 여부가 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
                     return flask.make_response(flask.jsonify(send_data), status_code)
@@ -938,37 +986,47 @@ def statusOfficeList():
 
             if condition_query:
                 condition_query = condition_query + ' GROUP BY export_date, from_office_tag, to_office_tag ORDER BY export_date DESC'
-                query = f"SELECT export_date, from_office_tag, to_office_tag, count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement" + condition_query + limit_query + ';'
+                query = f"SELECT export_date, from_office_tag, to_office_tag, count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement " + condition_query + limit_query + ';'
             else:
                 condition_query = ' GROUP BY export_date, from_office_tag, to_office_tag ORDER BY export_date DESC'
-                query = f"SELECT export_date, from_office_tag, to_office_tag, count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement" + condition_query + limit_query + ';'
+                query = f"SELECT export_date, from_office_tag, to_office_tag, count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement " + condition_query + limit_query + ';'
+            print(query)
             mysql_cursor.execute(query)
             status_rows = mysql_cursor.fetchall()
             
-            statusList = list()
-            for status_row in status_rows:
-                data = dict()
-                data['exportDate'] = status_row[0]
-                data['fromOfficeTag'] = status_row[1]
-                data['toOfficeTag'] = status_row[2]
-                data['moveCount'] = status_row[3]
-                data['approveCount'] = status_row[4]
-                data['unApproveCount'] = status_row[5]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','출고일','출발 영업소','fromOfficeTag','도착 영업소','toOfficeTag','출고건수','승인건수','미승인건수']
+            send_data['table']['rows'] = list()
 
-                query = f"SELECT office_name FROM office WHERE office_tag = {data['fromOfficeTag']};"
+            for index, status_row in enumerate(status_rows):
+                data = list()
+                data.append(start+index+1)
+
+                data.append(status_row[0])
+
+                fromOfficeTag  = status_row[1]
+                toOfficeTag     = status_row[2]
+
+                query = f"SELECT office_name FROM office WHERE office_tag = {fromOfficeTag};"
                 mysql_cursor.execute(query)
                 from_office_row = mysql_cursor.fetchone()
-                data['fromOffice'] = from_office_row[0]
+                data.append(from_office_row[0])
+                data.append(fromOfficeTag)
 
-                query = f"SELECT office_name FROM office WHERE office_tag = {data['toOfficeTag']};"
+                query = f"SELECT office_name FROM office WHERE office_tag = {toOfficeTag};"
                 mysql_cursor.execute(query)
                 to_office_row = mysql_cursor.fetchone()
-                data['toOffice'] = to_office_row[0]
+                data.append(to_office_row[0])
+                data.append(toOfficeTag)
 
-                statusList.append(data)
+                data.append(status_row[3])
+                data.append(status_row[4])
+                data.append(status_row[5])
+
+                send_data['table']['rows'].append(data)
 
            
-            query = f"SELECT count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement" + condition_query + ';'
+            query = f"SELECT count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement " + condition_query + ';'
             mysql_cursor.execute(query)
             count_rows = mysql_cursor.fetchall()
             send_data['totalResult'] = len(count_rows)
@@ -982,7 +1040,6 @@ def statusOfficeList():
                 totalUnapprove += int(count_row[2])
 
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = statusList
             send_data['totalPage'] = int((len(count_rows))/int(limit)) + 1
             send_data['totalMove'] = totalMove
             send_data['totalApprove'] = totalApprove
@@ -1025,50 +1082,66 @@ def statusOfficeDetailList():
 
             send_data['exportDate'] = export_date
             
-            query = f"SELECT stocking_date, import_date, season, part_number, goods_tag, (SELECT brand_name FROM brand WHERE brand.brand_tag = goods.brand_tag) as brand, (SELECT category_name FROM category WHERE category.category_tag = goods.category_tag), sex, color, material, size, origin_name, supplier_tag, status, cost, first_cost, regular_cost, department_store_cost, event_cost, outlet_cost, sale_cost, discount_cost, description, (SELECT move_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as mover, (SELECT goods_movement.status FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as move_status, (SELECT approver_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as approver, register_date FROM goods WHERE goods_tag IN (SELECT goods_tag FROM goods_movement WHERE export_date = '{export_date}' and from_office_tag = {from_office_tag} and to_office_tag = {to_office_tag});"
+            query = f"SELECT stocking_date, import_date, season, part_number, goods_tag, (SELECT brand_name FROM brand WHERE brand.brand_tag = goods.brand_tag) as brand, (SELECT category_name FROM category WHERE category.category_tag = goods.category_tag), sex, color, material, size, origin_name, supplier_tag, goods.status, cost, first_cost, regular_cost, department_store_cost, event_cost, outlet_cost, sale_cost, discount_cost, description, (SELECT move_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as mover, (SELECT goods_movement.status FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as move_status, (SELECT approver_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as approver, register_date FROM goods WHERE goods_tag IN (SELECT goods_tag FROM goods_movement WHERE export_date = '{export_date}' and from_office_tag = {from_office_tag} and to_office_tag = {to_office_tag});"
             mysql_cursor.execute(query)
             status_rows = mysql_cursor.fetchall()
             
-            statusList = list()
-            for status_row in status_rows:
-                data = dict()
-                data['exportDate'] = export_date
-                data['stockingDate'] = status_row[0]
-                data['importDate'] = status_row[1]
-                data['season'] = status_row[2]
-                data['partNumber'] = status_row[3]
-                data['goodsTag'] = status_row[4]
-                data['brand'] = status_row[5]
-                data['category'] = status_row[6]
-                sex = int(status_row[7]) 
-                data['color'] = status_row[8]
-                data['material'] = status_row[9]
-                data['size'] = status_row[10]
-                data['origin'] = status_row[11]
-                supplier_tag = status_row[12]
-                data['status'] = status_row[13]
-                data['cost'] = status_row[14]
-                data['firstCost'] = status_row[15]
-                data['regularcost'] = status_row[16]
-                data['departmentStoreCost'] = status_row[17]
-                data['eventCost'] = status_row[18]
-                data['outletCost'] = status_row[19]
-                data['saleCost'] = status_row[20]
-                data['discountCost'] = status_row[21]
-                data['description'] = status_row[22]
-                data['moveRequestUser'] = status_row[23]
-                move_status= int(status_row[24])
-                data['approveUser'] = status_row[25]
-                data['registerDate'] = status_row[26]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','출고일','입고일','수입일','이미지','시즌','품번','태그번호','브랜드','상품종류','성별','색상','소재','사이즈','원산지','공급처 유형','공급처','출발영업소','도착영업소','상품상태','COST','원가','정상 판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','메모','출고요청자','승인여부','승인자']
+            send_data['table']['rows'] = list()
 
-                if sex == 0:
-                    data['sex'] = '공용'
-                elif sex == 1:
-                    data['sex'] = '남성'
+            for index, status_row in enumerate(status_rows):
+                data = list()
+                data.append(index+1)
+                data.append(export_date)
+                data.append(status_row[0])
+                data.append(status_row[1])
+
+                goodsTag = status_row[4]
+
+                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{goodsTag}';"
+                mysql_cursor.execute(query)
+                image_row = mysql_cursor.fetchone()
+                if image_row:
+                    data.append(image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/'))
                 else:
-                    data['sex'] = '여성'
+                    data.append(None)
 
-                query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{data['goodsTag']}'"
+                data.append(status_row[2])
+                data.append(status_row[3])
+                data.append(goodsTag)                
+                data.append(status_row[5])
+                data.append(status_row[6])
+                sex = int(status_row[7])
+                if sex == 0:
+                    data.append('공용')
+                elif sex == 1:
+                    data.append('남성')
+                else:
+                    data.append('여성')
+
+                data.append(status_row[8])
+                data.append(status_row[9])
+                data.append(status_row[10])
+                data.append(status_row[11])
+
+                supplier_tag = status_row[12]
+                query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
+                mysql_cursor.execute(query)
+                supplier_row = mysql_cursor.fetchone()
+                #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
+                supplier_type = int(supplier_row[1])
+                if supplier_type == 1:
+                    data.append('위탁')
+                elif supplier_type == 2:
+                    data.append('사입')
+                elif supplier_type == 3:
+                    data.append('직수입')
+                elif supplier_type == 4:
+                    data.append('미입고')
+                data.append(supplier_row[0])
+
+                query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{goodsTag}'"
                 mysql_cursor.execute(query)
                 office_tag_row = mysql_cursor.fetchone()
                 fromOfficeTag = office_tag_row[0]
@@ -1077,46 +1150,62 @@ def statusOfficeDetailList():
                 query = f"SELECT office_name FROM office WHERE office_tag = {fromOfficeTag};"
                 mysql_cursor.execute(query)
                 from_office_row = mysql_cursor.fetchone()
-                data['fromOffice'] = from_office_row[0]
+                data.append(from_office_row[0])
                 send_data['fromOffice'] = from_office_row[0]
 
                 query = f"SELECT office_name FROM office WHERE office_tag = {toOfficeTag};"
                 mysql_cursor.execute(query)
                 to_office_row = mysql_cursor.fetchone()
-                data['toOffice'] = to_office_row[0]
+                data.append(to_office_row[0])
                 send_data['toOffice'] = to_office_row[0]
 
-                query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
-                mysql_cursor.execute(query)
-                supplier_row = mysql_cursor.fetchone()
-                data['supplierName'] = supplier_row[0]
-                #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
-                supplier_type = int(supplier_row[1])
-                if supplier_type == 1:
-                    data['supplierType'] = '위탁'
-                elif supplier_type == 2:
-                    data['supplierType'] = '사입'
-                elif supplier_type == 3:
-                    data['supplierType'] = '직수입'
-                elif supplier_type == 4:
-                    data['supplierType'] = '미입고'
+                goods_status = status_row[13]
+                if goods_status == 1:
+                    data.append('스크래치')
+                elif goods_status == 2:
+                    data.append('판매불가')
+                elif goods_status == 3:
+                    data.append('폐기')
+                elif goods_status == 4:
+                    data.append('정상재고')
+                elif goods_status == 5:
+                    data.append('분실')
+                elif goods_status == 6:
+                    data.append('정산대기')
+                elif goods_status == 7:
+                    data.append('분배대기')
+                elif goods_status == 8:
+                    data.append('회수완료')
+                elif goods_status == 9:
+                    data.append('수선중')
+                elif goods_status == 10:
+                    data.append('반품정산대기')
+                elif goods_status == 11:
+                    data.append('판매완료')
+                elif goods_status == 12:
+                    data.append('출고승인대기')
+                elif goods_status == 13:
+                    data.append('고객반송대기')
 
-                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{data['goodsTag']}';"
-                mysql_cursor.execute(query)
-                image_row = mysql_cursor.fetchone()
-                if image_row:
-                    data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
-                else:
-                    data['imageUrl'] = None
-
+                data.append(status_row[14])
+                data.append(status_row[15])
+                data.append(status_row[16])
+                data.append(status_row[17])
+                data.append(status_row[18])
+                data.append(status_row[19])
+                data.append(status_row[20])
+                data.append(status_row[21])
+                data.append(status_row[22])
+                data.append(status_row[23])
+                move_status= int(status_row[24])
                 if move_status == 0:
-                    data['approve'] = 'NO'
+                    data.append('NO')
                 else:
-                    data['approve'] = 'YES'
+                    data.append('YES')
+                data.append(status_row[25])
 
-                statusList.append(data)
+                send_data['table']['rows'].append(data)
 
-           
             query = f"SELECT count(*), count(case when goods_movement.status = 1 then 1 end) as approveCount, count(case when goods_movement.status = 0 then 1 end) as unApproveCount FROM goods_movement WHERE export_date = '{export_date}' and from_office_tag = {from_office_tag} and to_office_tag = {to_office_tag};"
             mysql_cursor.execute(query)
             count_row = mysql_cursor.fetchone()
@@ -1124,7 +1213,6 @@ def statusOfficeDetailList():
             send_data['totalApprove'] = count_row[1]
             send_data['totalUnapprove'] = count_row[2]
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = statusList
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}
@@ -1213,16 +1301,23 @@ def statusPartNumberList():
                     else:
                         condition_query = f" WHERE ({category_query})"
 
-            if 'sex' in params:
-                sex = int(params['sex'])
-                if sex < 0 or sex > 2:
-                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    return flask.make_response(flask.jsonify(send_data), status_code)
-                if condition_query:
-                    condition_query = condition_query + f" and sex = {sex}"
-                else:
-                    condition_query = f" WHERE sex = {sex}"
+            if 'sexList' in params:
+                sexList = request.args.getlist('sexList')
+                sex_query = None
+                for sex in sexList:
+                    if sex < 0 or sex > 2:
+                        send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if sex_query:
+                        sex_query = sex_query + f" or sex = {sex}"
+                    else:
+                        sex_query = f"sex = {sex}"
+                if sex_query:
+                    if condition_query:
+                        condition_query = condition_query + f" and ({sex_query})"
+                    else:
+                        condition_query = f"WHERE ({sex_query})"
 
             if 'originList' in params:
                 origins = request.args.getlist('originList')
@@ -1345,59 +1440,57 @@ def statusPartNumberList():
 
             if condition_query:
                 condition_query = condition_query + ' and goods_tag IN (SELECT goods_tag FROM goods_movement) GROUP BY stocking_date, part_number, supplier_tag ORDER BY stocking_date DESC'
-                query = f"SELECT (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, any_value(brand_tag), any_value(category_tag), part_number, stocking_date, any_value(color), any_value(material), any_value(origin_name), avg(cost), avg(first_cost), avg(regular_cost), avg(department_store_cost), avg(event_cost), avg(outlet_cost), avg(sale_cost), avg(discount_cost), avg(management_cost)  FROM goods" + condition_query + limit_query + ';'
+                query = f"SELECT (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, any_value(brand_tag), any_value(category_tag), part_number, stocking_date, any_value(color), any_value(material), any_value(origin_name), avg(cost), avg(first_cost), avg(regular_cost), avg(department_store_cost), avg(event_cost), avg(outlet_cost), avg(sale_cost), avg(discount_cost), avg(management_cost)  FROM goods " + condition_query + limit_query + ';'
             else:
                 condition_query = ' WHERE goods_tag IN (SELECT goods_tag FROM goods_movement) GROUP BY stocking_date, part_number, supplier_tag ORDER BY stocking_date DESC'
-                query = f"SELECT (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, any_value(brand_tag), any_value(category_tag), part_number, stocking_date, any_value(color), any_value(material), any_value(origin_name), avg(cost), avg(first_cost), avg(regular_cost), avg(department_store_cost), avg(event_cost), avg(outlet_cost), avg(sale_cost), avg(discount_cost), avg(management_cost)  FROM goods" + condition_query + limit_query + ';'
+                query = f"SELECT (SELECT supplier_type FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_type, (SELECT supplier_name FROM supplier WHERE supplier.supplier_tag = goods.supplier_tag) as supplier_name, any_value(brand_tag), any_value(category_tag), part_number, stocking_date, any_value(color), any_value(material), any_value(origin_name), avg(cost), avg(first_cost), avg(regular_cost), avg(department_store_cost), avg(event_cost), avg(outlet_cost), avg(sale_cost), avg(discount_cost), avg(management_cost)  FROM goods " + condition_query + limit_query + ';'
             mysql_cursor.execute(query)
             status_rows = mysql_cursor.fetchall()
             
-            statusList = list()
-            for status_row in status_rows:
-                data = dict()
-                data['supplierType'] = status_row[0]
-                data['supplierName'] = status_row[1]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','공급처 유형','공급처','브랜드','상품종류','이미지','품번','입고일','색상','소재','원산지','총 출고 건수','출고영업소 / 건수','총 승인 건수','도착영업소 / 승인','총 미승인 건수','도착영업소 / 미승인','COST','원가','정상 판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','관리원가']
+            send_data['table']['rows'] = list()
+
+            for index,status_row in enumerate(status_rows):
+                data = list()
+                partNumber = status_row[4]
+                data.append(start+index+1)
+                data.append(status_row[0])
+                data.append(status_row[1])
+
                 brand_tag = status_row[2]
-                category_tag = status_row[3]
-                data['partNumber'] = status_row[4]
-                data['stockingDate'] = status_row[5]
-                data['color'] = status_row[6]
-                data['material'] = status_row[7]
-                data['origin'] = status_row[8]
-                data['cost'] = status_row[9]
-                data['firstCost'] = status_row[10]
-                data['regularCost'] = status_row[11]
-                data['departmentStoreCost'] = status_row[12]
-                data['eventCost'] = status_row[13]
-                data['outletCost'] = status_row[14]
-                data['saleCost'] = status_row[15]
-                data['discountCost'] = status_row[16]
-                data['managementCost'] = status_row[17]
-
-
                 query = f"SELECT brand_name FROM brand WHERE brand_tag = '{brand_tag}';"
                 mysql_cursor.execute(query)
                 brand_row = mysql_cursor.fetchone()
-                data['brand'] = brand_row[0]
+                data.append(brand_row[0])
 
+                category_tag = status_row[3]
                 query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
                 mysql_cursor.execute(query)
                 category_row = mysql_cursor.fetchone()
-                data['category'] = category_row[0]
+                data.append(category_row[0])
 
-                query = f"SELECT image_path FROM goods_image WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE part_number = '{data['partNumber']}');"
+                query = f"SELECT image_path FROM goods_image WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE part_number = '{partNumber}');"
                 mysql_cursor.execute(query)
                 image_row = mysql_cursor.fetchone()
                 if image_row:
-                    data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
+                    data.append(image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/'))
                 else:
-                    data['imageUrl'] = None
+                    data.append(None)
+
+                data.append(partNumber)
+
+                data.append(status_row[5])
+                data.append(status_row[6])
+                data.append(status_row[7])
+                data.append(status_row[8])
 
                 query = f"SELECT status, (SELECT office_name FROM office WHERE office_tag = from_office_tag) as from_office, (SELECT office_name FROM office WHERE office_tag = to_office_tag) as to_office FROM goods_movement WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE part_number = '{data['partNumber']}' and stocking_date = '{data['stockingDate']}');"
                 mysql_cursor.execute(query)
                 goods_rows = mysql_cursor.fetchall()
 
-                data['moveCount'] = len(goods_rows)
+                data.append(len(goods_rows))
+
                 approveCount = 0
                 unApproveCount = 0
                 formOfficeDict = dict()
@@ -1425,16 +1518,15 @@ def statusPartNumberList():
                         else:
                             toOfficeApproveDict[to_office] = 1
 
-                data['approveCount'] = approveCount
-                data['unApproveCount'] = unApproveCount
-
                 fromOffice = None
                 for key in formOfficeDict:
                     if fromOffice:
                         fromOffice = f"{key}\t/ {formOfficeDict[key]}"
                     else:
                         fromOffice = fromOffice + f"\n{key}\t/ {formOfficeDict[key]}"
-                data['fromOffice'] = fromOffice
+                data.append(fromOffice)
+
+                data.append(approveCount)
 
                 toOfficeApprove = None
                 for key in toOfficeApproveDict:
@@ -1442,7 +1534,9 @@ def statusPartNumberList():
                         toOfficeApprove = f"{key}\t/ {toOfficeApproveDict[key]}"
                     else:
                         toOfficeApprove = toOfficeApprove + f"\n{key}\t/ {toOfficeApproveDict[key]}"
-                data['toOfficeApprove'] = toOfficeApprove
+                data.append(toOfficeApprove)
+                
+                data.append(unApproveCount)
 
                 toOfficeUnApprove = None
                 for key in toOfficeUnApproveDict:
@@ -1450,14 +1544,21 @@ def statusPartNumberList():
                         toOfficeUnApprove = f"{key}\t/ {toOfficeUnApproveDict[key]}"
                     else:
                         toOfficeUnApprove = toOfficeUnApprove + f"\n{key}\t/ {toOfficeUnApproveDict[key]}"
-                data['toOfficeApprove'] = toOfficeUnApprove
+                data.append(toOfficeUnApprove)
 
-                query = f"SELECT sum(cost), sum(first_cost), sum(regular_cost), sum(department_store_cost), sum(event_cost)"
+                data.append(status_row[9])
+                data.append(status_row[10])
+                data.append(status_row[11])
+                data.append(status_row[12])
+                data.append(status_row[13])
+                data.append(status_row[14])
+                data.append(status_row[16])
+                data.append(status_row[17])
 
-                statusList.append(data)
+                send_data['table']['rows'].append(data)
 
            
-            query = f"SELECT count(*), count(case when goods.status != 12 then 1 end) as approveCount, count(case when goods.status = 12 then 1 end) as unApproveCount, sum(cost), sum(first_cost), sum(regular_cost), sum(department_store_cost), sum(event_cost), sum(outlet_cost), sum(sale_cost), sum(discount_cost), sum(management_cost) FROM goods" + condition_query + ';'
+            query = f"SELECT count(*), count(case when goods.status != 12 then 1 end) as approveCount, count(case when goods.status = 12 then 1 end) as unApproveCount, sum(cost), sum(first_cost), sum(regular_cost), sum(department_store_cost), sum(event_cost), sum(outlet_cost), sum(sale_cost), sum(discount_cost), sum(management_cost) FROM goods " + condition_query + ';'
             mysql_cursor.execute(query)
             count_rows = mysql_cursor.fetchall()
             send_data['totalResult'] = len(count_rows)
@@ -1489,7 +1590,6 @@ def statusPartNumberList():
                 send_data['totalManagementCost'] += count_row[11]
 
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = statusList
             send_data['totalPage'] = int((len(count_rows))/int(limit)) + 1
 
         except Exception as e:
@@ -1529,46 +1629,62 @@ def statusPartNumberDetailList():
             mysql_cursor.execute(query)
             status_rows = mysql_cursor.fetchall()
             
-            statusList = list()
-            for status_row in status_rows:
-                data = dict()
-                data['exportDate'] = status_row[0]
-                data['stockingDate'] = status_row[1]
-                data['importDate'] = status_row[2]
-                data['season'] = status_row[3]
-                data['partNumber'] = status_row[4]
-                data['goodsTag'] = status_row[5]
-                data['brand'] = status_row[6]
-                data['category'] = status_row[7]
-                sex = int(status_row[8]) 
-                data['color'] = status_row[9]
-                data['material'] = status_row[10]
-                data['size'] = status_row[11]
-                data['origin'] = status_row[12]
-                supplier_tag = status_row[13]
-                data['status'] = status_row[14]
-                data['cost'] = status_row[15]
-                data['firstCost'] = status_row[16]
-                data['regularcost'] = status_row[17]
-                data['departmentStoreCost'] = status_row[18]
-                data['eventCost'] = status_row[19]
-                data['outletCost'] = status_row[20]
-                data['saleCost'] = status_row[21]
-                data['discountCost'] = status_row[22]
-                data['description'] = status_row[23]
-                data['moveRequestUser'] = status_row[24]
-                move_status= int(status_row[25])
-                data['approveUser'] = status_row[26]
-                data['registerDate'] = status_row[27]
+            send_data['table'] = dict()
+            send_data['table']['column'] = ['검색 번호','출고일','입고일','수입일','이미지','시즌','품번','태그번호','브랜드','상품종류','성별','색상','소재','사이즈','원산지','공급처 유형','공급처','출발영업소','도착영업소','상품상태','COST','원가','정상 판매가','백화점 판매가','행사 판매가','아웃렛 판매가','특별할인가','메모','승인여부','승인자']
+            send_data['table']['rows'] = list()
 
-                if sex == 0:
-                    data['sex'] = '공용'
-                elif sex == 1:
-                    data['sex'] = '남성'
+            for index, status_row in enumerate(status_rows):
+                data = list()
+                goodsTag = status_row[5]
+                data.append(index+1)
+                data.append(status_row[0])
+                data.append(status_row[1])
+                data.append(status_row[2])
+                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{goodsTag}';"
+                mysql_cursor.execute(query)
+                image_row = mysql_cursor.fetchone()
+                if image_row:
+                    data.append(image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/'))
                 else:
-                    data['sex'] = '여성'
+                    data.append(None)
+                
+                data.append(status_row[3])
+                data.append(status_row[4])
+                data.append(goodsTag)
+                
+                data.append(status_row[6])
+                data.append(status_row[7])
 
-                query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{data['goodsTag']}'"
+                sex = int(status_row[8])
+                if sex == 0:
+                    data.append('공용')
+                elif sex == 1:
+                    data.append('남성')
+                else:
+                    data.append('여성')
+
+                data.append(status_row[9])
+                data.append(status_row[10])
+                data.append(status_row[11])
+                data.append(status_row[12])
+
+                supplier_tag = status_row[13]
+                query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
+                mysql_cursor.execute(query)
+                supplier_row = mysql_cursor.fetchone()
+                #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
+                supplier_type = int(supplier_row[1])
+                if supplier_type == 1:
+                    data.append('위탁')
+                elif supplier_type == 2:
+                    data.append('사입')
+                elif supplier_type == 3:
+                    data.append('직수입')
+                elif supplier_type == 4:
+                    data.append('미입고')
+                data.append(supplier_row[0])
+
+                query = f"SELECT from_office_tag, to_office_tag FROM goods_movement WHERE goods_tag = '{goodsTag}';"
                 mysql_cursor.execute(query)
                 office_tag_row = mysql_cursor.fetchone()
                 fromOfficeTag = office_tag_row[0]
@@ -1577,49 +1693,35 @@ def statusPartNumberDetailList():
                 query = f"SELECT office_name FROM office WHERE office_tag = {fromOfficeTag};"
                 mysql_cursor.execute(query)
                 from_office_row = mysql_cursor.fetchone()
-                data['fromOffice'] = from_office_row[0]
-                send_data['fromOffice'] = from_office_row[0]
+                data.append(from_office_row[0])
 
                 query = f"SELECT office_name FROM office WHERE office_tag = {toOfficeTag};"
                 mysql_cursor.execute(query)
                 to_office_row = mysql_cursor.fetchone()
-                data['toOffice'] = to_office_row[0]
-                send_data['toOffice'] = to_office_row[0]
+                data.append(to_office_row[0])
 
-                query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
-                mysql_cursor.execute(query)
-                supplier_row = mysql_cursor.fetchone()
-                data['supplierName'] = supplier_row[0]
-                #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
-                supplier_type = int(supplier_row[1])
-                if supplier_type == 1:
-                    data['supplierType'] = '위탁'
-                elif supplier_type == 2:
-                    data['supplierType'] = '사입'
-                elif supplier_type == 3:
-                    data['supplierType'] = '직수입'
-                elif supplier_type == 4:
-                    data['supplierType'] = '미입고'
-
-                query = f"SELECT image_path FROM goods_image WHERE goods_tag = '{data['goodsTag']}';"
-                mysql_cursor.execute(query)
-                image_row = mysql_cursor.fetchone()
-                if image_row:
-                    data['imageUrl'] = image_row[0].replace('/home/ubuntu/data/','http://52.79.206.187:19999/')
-                else:
-                    data['imageUrl'] = None
-
+                data.append(status_row[14])
+                data.append(status_row[15])
+                data.append(status_row[16])
+                data.append(status_row[17])
+                data.append(status_row[18])
+                data.append(status_row[19])
+                data.append(status_row[20])
+                data.append(status_row[22])
+                data.append(status_row[23])
+                move_status= int(status_row[25])
                 if move_status == 0:
-                    data['approve'] = 'NO'
+                    data.append('NO')
                 else:
-                    data['approve'] = 'YES'
+                    data.append('YES')
+                data.append(status_row[26])
 
-                statusList.append(data)
+                send_data['table']['rows'].append(data)
 
-            if len(statusList) > 0:
-                send_data['brand'] = statusList[0]['brand']
-                send_data['category'] = statusList[0]['category']
-                send_data['supplierName'] = statusList[0]['supplierName']
+            if len(send_data['table']['rows']) > 0:
+                send_data['brand'] = send_data['table']['rows'][0][8]
+                send_data['category'] = send_data['table']['rows'][0][9]
+                send_data['supplierName'] = send_data['table']['rows'][0][16]
             else:
                 send_data['brand'] = None
                 send_data['category'] = None
@@ -1632,7 +1734,6 @@ def statusPartNumberDetailList():
             send_data['totalApprove'] = count_row[1]
             send_data['totalUnapprove'] = count_row[2]
             send_data['result'] = 'SUCCESS'
-            send_data['list'] = statusList
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}

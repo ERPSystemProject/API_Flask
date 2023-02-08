@@ -21,7 +21,7 @@ move_list_query_parser.add_argument('startDate', type=str, help='search start da
 move_list_query_parser.add_argument('endDate', type=str, help='search end date')
 move_list_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 move_list_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-move_list_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+move_list_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 move_list_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 move_list_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 move_list_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -37,7 +37,7 @@ move_approve_list_query_parser.add_argument('startDate', type=str, help='search 
 move_approve_list_query_parser.add_argument('endDate', type=str, help='search end date')
 move_approve_list_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 move_approve_list_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-move_approve_list_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+move_approve_list_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 move_approve_list_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 move_approve_list_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 move_approve_list_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -55,7 +55,7 @@ office_move_list_query_parser.add_argument('startDate', type=str, help='search s
 office_move_list_query_parser.add_argument('endDate', type=str, help='search end date')
 office_move_list_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 office_move_list_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-office_move_list_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+office_move_list_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 office_move_list_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 office_move_list_query_parser.add_argument('searchType', type=int, help='search type | 0:part_number, 1:tag, 2:color, 3:material, 4:size')
 office_move_list_query_parser.add_argument('searchContent', type=str, help='search content')
@@ -71,7 +71,7 @@ part_number_move_list_query_parser.add_argument('startDate', type=str, help='sea
 part_number_move_list_query_parser.add_argument('endDate', type=str, help='search end date')
 part_number_move_list_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 part_number_move_list_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-part_number_move_list_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+part_number_move_list_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 part_number_move_list_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 part_number_move_list_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 part_number_move_list_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -89,6 +89,11 @@ office_move_detail_query_parser.add_argument('toOfficeTag', type=int, required=T
 part_number_move_detail_query_parser = reqparse.RequestParser()
 part_number_move_detail_query_parser.add_argument('stockingDate', type=str, required=True, help='stocking date')
 part_number_move_detail_query_parser.add_argument('partNumber', type=str, required=True, help='part number')
+
+table_fields = move_ns.model('move table fields', {
+    'column':fields.List(fields.String(description='column name',required=True,example='tag')),
+    'rows':fields.List(fields.List(fields.String(description='row data',required=True,example='data')))
+})
 
 move_list_fields = move_ns.model('move list fields', {
     'tag':fields.String(description='goods tag',required=True,example='113AB1611120BC149'),
@@ -117,7 +122,7 @@ move_list_fields = move_ns.model('move list fields', {
 
 move_list_response_fields = move_ns.model('move list response fields', {
     'result':fields.String(description='result',required=True,example='SUCCESS'),
-    'list':fields.List(fields.Nested(move_list_fields)),
+    'table':fields.Nested(table_fields),
     'totalPage':fields.Integer(description="totalPage", required=True, example=10),
     'totalMove':fields.Integer(description='total move',required=True,example=15)
 })
@@ -206,7 +211,7 @@ move_status_list_fields = move_ns.model('move status list fields', {
 
 move_wait_approve_list_response_fields = move_ns.model('wait move approve list response fields', {
     'result':fields.String(description='result',required=True,example='SUCCESS'),
-    'list':fields.List(fields.Nested(move_wait_approve_list_fields)),
+    'table':fields.Nested(table_fields),
     'totalPage':fields.Integer(description="totalPage", required=True, example=10),
     'totalWaiting':fields.Integer(description='total waiting count',required=True,example=15)
 })
@@ -238,7 +243,7 @@ office_move_list_response_fields = move_ns.model('office move list response fiel
     'totalApprove':fields.Integer(description='total approve',required=True,example=2000),
     'totalUnapprove':fields.Integer(description='total unapprove',required=True,example=1000),
     'totalPage':fields.Integer(description='total page',required=True,example=10),
-    'list':fields.List(fields.Nested(office_move_list_fields))
+    'table':fields.Nested(table_fields)
 })
 
 office_move_detail_response_fields = move_ns.model('office move detail response fields', {
@@ -248,7 +253,7 @@ office_move_detail_response_fields = move_ns.model('office move detail response 
     'totalMove':fields.Integer(description='total move',required=True,example=3000),
     'totalApprove':fields.Integer(description='total approve',required=True,example=2000),
     'totalUnapprove':fields.Integer(description='total unapprove',required=True,example=1000),
-    'list':fields.List(fields.Nested(move_status_list_fields))
+    'table':fields.Nested(table_fields)
 })
 
 part_number_move_list_fields = move_ns.model('part number move list fields' ,{
@@ -294,7 +299,7 @@ part_number_move_list_response_fields = move_ns.model('part number move list res
     'totalSaleCost':fields.Integer(description='sale cost',required=True,example=900000),
     'totalDiscountCost':fields.Integer(description='discount cost',required=True,example=850000),
     'totalManagementCost':fields.Integer(description='management cost',required=True,example=50000),
-    'list':fields.List(fields.Nested(part_number_move_list_fields))
+    'table':fields.Nested(table_fields)
 })
 
 part_number_move_detail_response_fields = move_ns.model('part number move detail response fields', {
@@ -306,7 +311,7 @@ part_number_move_detail_response_fields = move_ns.model('part number move detail
     'supplierName':fields.String(description='supplier name',required=True,example='supplier name'),
     'brand':fields.String(description='brand name',required=True,example='A.p.c.'),
     'category':fields.String(description='category name',required=True,example='Bag'),
-    'list':fields.List(fields.Nested(move_status_list_fields))
+    'table':fields.Nested(table_fields)
 })
 
 #config 불러오기
@@ -368,7 +373,7 @@ class approveApiList(Resource):
     @move_ns.response(201, 'OK', move_approve_response_fields)
     @move_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
     @jwt_required()
-    def post(self,goodsTag):
+    def post(self):
         '''
         approve move goods
         '''

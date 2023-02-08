@@ -131,16 +131,23 @@ def getGoodsList():
                 else:
                     condition_query = f"WHERE ({category_query})"
 
-        if 'sex' in params:
-            sex = int(params['sex'])
-            if sex < 0 or sex > 2:
-                send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                status_code = status.HTTP_400_BAD_REQUEST
-                return flask.make_response(flask.jsonify(send_data), status_code)
-            if condition_query:
-                condition_query = condition_query + f" and sex = {sex}"
-            else:
-                condition_query = f"WHERE sex = {sex}"
+        if 'sexList' in params:
+            sexList = request.args.getlist('sexList')
+            sex_query = None
+            for sex in sexList:
+                if sex < 0 or sex > 2:
+                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    return flask.make_response(flask.jsonify(send_data), status_code)
+                if sex_query:
+                    sex_query = sex_query + f" or sex = {sex}"
+                else:
+                    sex_query = f"sex = {sex}"
+            if sex_query:
+                if condition_query:
+                    condition_query = condition_query + f" and ({sex_query})"
+                else:
+                    condition_query = f"WHERE ({sex_query})"
 
         if 'originList' in params:
             origins = request.args.getlist('originList')
@@ -277,9 +284,10 @@ def getGoodsList():
                     else:
                         condition_query = f"WHERE size like '%{searchContent}%'"
         if condition_query:
-            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods" + condition_query + limit_query + ';'
+            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods " + condition_query + limit_query + ';'
         else:
-            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods" + limit_query + ';'
+            query = f"SELECT goods_tag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, stocking_date, import_date, sale_date, cost, regular_cost, sale_cost, discount_cost, management_cost, goods.status, first_cost FROM goods " + limit_query + ';'
+        print(query)
         mysql_cursor.execute(query)
         goods_rows = mysql_cursor.fetchall()
 
@@ -314,21 +322,25 @@ def getGoodsList():
             mysql_cursor.execute(query)
             brand_row = mysql_cursor.fetchone()
             data['brand'] = brand_row[0]
+            data['brandTag'] = brand_tag
 
             query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
             mysql_cursor.execute(query)
             category_row = mysql_cursor.fetchone()
             data['category'] = category_row[0]
+            data['categoryTag'] = category_tag
 
             query = f"SELECT office_name FROM office WHERE office_tag = {office_tag};"
             mysql_cursor.execute(query)
             office_row = mysql_cursor.fetchone()
             data['office'] = office_row[0]
+            data['officeTag'] = office_tag
 
             query = f"SELECT supplier_name, supplier_type FROM supplier WHERE supplier_tag = '{supplier_tag}';"
             mysql_cursor.execute(query)
             supplier_row = mysql_cursor.fetchone()
             data['supplierName'] = supplier_row[0]
+            data['supplierTag'] = supplier_tag
             
             if sex == 0:
                 data['sex'] = '공용'
@@ -336,6 +348,7 @@ def getGoodsList():
                 data['sex'] = '남성'
             else:
                 data['sex'] = '여성'
+            data['sexTag'] = sex
 
             #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
             supplier_type = int(supplier_row[1])
@@ -385,7 +398,7 @@ def getGoodsList():
             goodsList.append(data)
 
         if condition_query:
-            query = f"SELECT count(*) FROM goods" + condition_query + ';'
+            query = f"SELECT count(*) FROM goods " + condition_query + ';'
         else:
             query = f"SELECT count(*) FROM goods;"
         mysql_cursor.execute(query)
@@ -461,6 +474,7 @@ def goodsDetailAPIList(goodsTag):
             supplier_row = mysql_cursor.fetchone()
             baseInfo['supplier'] = supplier_row[0]
             supplier_type = int(supplier_row[1])
+            baseInfo['supplierTag'] = supplier_tag
             
             #1:위탁, 2: 사입, 3: 직수입, 4: 미입고
             if supplier_type == 1:
@@ -503,16 +517,19 @@ def goodsDetailAPIList(goodsTag):
             mysql_cursor.execute(query)
             office_row = mysql_cursor.fetchone()
             baseInfo['office'] = office_row[0]
+            baseInfo['officeTag'] = office_tag
 
             query = f"SELECT brand_name FROM brand WHERE brand_tag = '{brand_tag}';"
             mysql_cursor.execute(query)
             brand_row = mysql_cursor.fetchone()
             baseInfo['brand'] = brand_row[0]
+            baseInfo['brandTag'] = brand_tag
 
             query = f"SELECT category_name FROM category WHERE category_tag = '{category_tag}';"
             mysql_cursor.execute(query)
             category_row = mysql_cursor.fetchone()
             baseInfo['category'] = category_row[0]
+            baseInfo['categoryTag'] = category_tag
 
             if sex == 0:
                 baseInfo['sex'] = '공용'
@@ -520,6 +537,7 @@ def goodsDetailAPIList(goodsTag):
                 baseInfo['sex'] = '남성'
             else:
                 baseInfo['sex'] = '여성'
+            baseInfo['sexTag'] = sex
             
             send_data['baseInformation'] = baseInfo
             send_data['costInformation'] = costInfo
@@ -710,7 +728,7 @@ def goodsDetailAPIList(goodsTag):
                 send_data = {"result": "원산지가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            if not 'sex' in request_body:
+            if not 'sexTag' in request_body:
                 send_data = {"result": "성별이 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
@@ -784,14 +802,15 @@ def goodsDetailAPIList(goodsTag):
                 return flask.make_response(flask.jsonify(send_data), status_code)
             
             query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
-            query += f"VALUES ('{goodsTag}', 0, '{request_body['partNumber']}', '{request_body['blNumber']}', '{request_body['origin']}', '{request_body['brandTag']}', '{request_body['categoryTag']}', {request_body['officeTag']}, {request_body['supplierTag']}, '{request_body['color']}', '{request_body['season']}', {request_body['sex']}, '{request_body['size']}', "
+            query += f"VALUES ('{goodsTag}', 0, '{request_body['partNumber']}', '{request_body['blNumber']}', '{request_body['origin']}', '{request_body['brandTag']}', '{request_body['categoryTag']}', {request_body['officeTag']}, {request_body['supplierTag']}, '{request_body['color']}', '{request_body['season']}', {request_body['sexTag']}, '{request_body['size']}', "
             query += f"'{request_body['material']}', '{request_body['description']}', 4, '{request_body['stockingDate']}', '{request_body['importDate']}', {request_body['firstCost']}, {request_body['cost']}, {request_body['regularCost']}, {request_body['saleCost']}, {request_body['eventCost']}, {request_body['discountCost']}, {request_body['managementCost']}, {request_body['managementCostRate']}, {request_body['departmentStoreCost']}, {request_body['outletCost']}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
             query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', 1, '물품등록', 4, '{request_body['userId']}', CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
-            os.makedirs(f"/home/ubuntu/data/goods/{goodsTag}")
+            if not os.path.exists(f"/home/ubuntu/data/goods/{goodsTag}"):
+                os.makedirs(f"/home/ubuntu/data/goods/{goodsTag}")
 
             send_data['result'] = 'SUCCESS'
             send_data['tag'] = goodsTag
@@ -851,7 +870,7 @@ def goodsDetailAPIList(goodsTag):
                 send_data = {"result": "원산지가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            if not 'sex' in request_body:
+            if not 'sexTag' in request_body:
                 send_data = {"result": "성별이 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
@@ -923,6 +942,14 @@ def goodsDetailAPIList(goodsTag):
                 send_data = {"result": "사용자가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
+            if goodsTag != request_body['goodsTag']:
+                query = f"SELECT * FROM goods WHERE goods_tag = '{request_body['goodsTag']}';"
+                mysql_cursor.execute(query)
+                goods_row = mysql_cursor.fetchone()
+                if goods_row:
+                    send_data = {"result": "해당 상품 태그는 이미 존재하는 상품 태그입니다."}
+                    status_code = status.HTTP_404_NOT_FOUND
+                    return flask.make_response(flask.jsonify(send_data), status_code)
             
             query = f"UPDATE goods SET goods_tag = '{request_body['goodsTag']}',"
             query += f"part_number = '{request_body['partNumber']}', "
@@ -934,7 +961,7 @@ def goodsDetailAPIList(goodsTag):
             query += f"supplier_tag = {request_body['supplierTag']}, "
             query += f"color = '{request_body['color']}', "
             query += f"season = '{request_body['season']}', "
-            query += f"sex = {request_body['sex']}, "
+            query += f"sex = {request_body['sexTag']}, "
             query += f"size = '{request_body['size']}', "
             query += f"material = '{request_body['material']}', "
             query += f"description = '{request_body['description']}', "
@@ -955,7 +982,7 @@ def goodsDetailAPIList(goodsTag):
             query += f"WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
 
-            query = f"SELECT status FROM goods WHERE goods_tag = '{request_body['goodsTag']}';"
+            query = f"SELECT goods.status FROM goods WHERE goods_tag = '{request_body['goodsTag']}';"
             mysql_cursor.execute(query)
             status_row = mysql_cursor.fetchone()
             goods_status = status_row[0]
@@ -970,8 +997,15 @@ def goodsDetailAPIList(goodsTag):
             else:
                 index = index_row[0] + 1
 
-            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', {index}, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+            query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{request_body['goodsTag']}', {index}, '물품정보수정', {goods_status}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+            print(query)
             mysql_cursor.execute(query)
+
+            if not os.path.exists(f"/home/ubuntu/data/goods/{request_body['goodsTag']}"):
+                os.makedirs(f"/home/ubuntu/data/goods/{request_body['goodsTag']}")
+
+            send_data['result'] = 'SUCCESS'
+            send_data['tag'] = request_body['goodsTag']
 
         except Exception as e:
             send_data = {"result": f"Error : {traceback.format_exc()}"}
@@ -1086,16 +1120,23 @@ def getGoodsFirstCostList():
                 else:
                     condition_query = f"WHERE ({category_query})"
 
-        if 'sex' in params:
-            sex = int(params['sex'])
-            if sex < 0 or sex > 2:
-                send_data = {"result": "성별 구분이 올바르지 않습니다."}
-                status_code = status.HTTP_400_BAD_REQUEST
-                return flask.make_response(flask.jsonify(send_data), status_code)
-            if condition_query:
-                condition_query = condition_query + f" and sex = {sex}"
-            else:
-                condition_query = f"WHERE sex = {sex}"
+        if 'sexList' in params:
+            sexList = request.args.getlist('sexList')
+            sex_query = None
+            for sex in sexList:
+                if sex < 0 or sex > 2:
+                    send_data = {"result": "성별 구분이 올바르지 않습니다."}
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    return flask.make_response(flask.jsonify(send_data), status_code)
+                if sex_query:
+                    sex_query = sex_query + f" or sex = {sex}"
+                else:
+                    sex_query = f"sex = {sex}"
+            if sex_query:
+                if condition_query:
+                    condition_query = condition_query + f" and ({sex_query})"
+                else:
+                    condition_query = f"WHERE ({sex_query})"
 
         if 'originList' in params:
             origins = request.args.getlist('originList')
@@ -1188,10 +1229,10 @@ def getGoodsFirstCostList():
                         condition_query = f"WHERE size like '%{searchContent}%'"
         if condition_query:
             condition_query = condition_query + f" GROUP BY stocking_date, supplier_tag ORDER BY stocking_date DESC"
-            query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods" + condition_query + limit_query 
+            query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods " + condition_query + limit_query 
         else:
             condition_query = f" GROUP BY stocking_date, supplier_tag ORDER BY stocking_date DESC"
-            query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods" + condition_query + limit_query 
+            query = f"SELECT stocking_date, supplier_tag, any_value(bl_number), count(goods_tag), sum(first_cost), sum(management_cost), any_value(user_id) FROM goods " + condition_query + limit_query 
         mysql_cursor.execute(query)
         goods_rows = mysql_cursor.fetchall()
 
@@ -1229,7 +1270,7 @@ def getGoodsFirstCostList():
             
             goodsList.append(data)
 
-        query = f"SELECT count(goods_tag), sum(first_cost), sum(management_cost) FROM goods" + condition_query + ';'
+        query = f"SELECT count(goods_tag), sum(first_cost), sum(management_cost) FROM goods " + condition_query + ';'
         mysql_cursor.execute(query)
         count_rows = mysql_cursor.fetchall()
         send_data['totalSearchResult'] = len(count_rows)
@@ -1407,13 +1448,6 @@ def postGoodsImageList(goodsTag):
         status_code = status.HTTP_404_NOT_FOUND
         return flask.make_response(flask.jsonify(send_data), status_code)
     try:
-        params = request.args.to_dict()
-        if not 'type' in params:
-            send_data = {"result": "이미지 type이 입력되지 않았습니다.\n1: 이미지, 2: 수입필증"}
-            status_code = status.HTTP_400_BAD_REQUEST
-            return flask.make_response(flask.jsonify(send_data), status_code)
-        image_type = params['type']
-        user_id = params['userId']
         query = f"SELECT MAX(goods_image_index) FROM goods_image WHERE goods_tag = '{goodsTag}';"
         mysql_cursor.execute(query)
         index_row = mysql_cursor.fetchone()
@@ -1423,11 +1457,15 @@ def postGoodsImageList(goodsTag):
             index = index_row[0] + 1
 
         files = flask.request.files.getlist("files")
+        if len(files) < 1:
+            send_data = {"result": "등록할 파일을 입력받지 못했습니다."}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return flask.make_response(flask.jsonify(send_data), status_code)
         filePath = f"/home/ubuntu/data/goods/{goodsTag}/"
         for file in files:
             file.save(filePath+file.filename)
             image_path = filePath+file.filename
-            query = f"INSERT INTO goods_image(goods_tag, goods_image_index, type, image_path, user_id, register_date) VALUES ('{goodsTag}',{index},{image_type},'{image_path}','{user_id}',CURRENT_TIMESTAMP);"
+            query = f"INSERT INTO goods_image(goods_tag, goods_image_index, type, image_path, user_id, register_date) VALUES ('{goodsTag}',{index},1,'{image_path}','admin',CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
             index += 1
 

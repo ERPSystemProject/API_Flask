@@ -39,3 +39,6 @@ sale_management:
 inventory_management:
   ip: 127.0.0.1
   port: 18010
+revenue_management:
+  ip: 127.0.0.1
+  port: 18011

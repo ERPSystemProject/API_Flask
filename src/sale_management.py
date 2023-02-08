@@ -653,7 +653,7 @@ def soldList():
                 data['saleRegisterName'] = goods_row[32]
                 register_type = int(goods_row[33])
 
-                data['commissionCost'] = int(data['realSaleCost']*data['commissionRate']/100)
+                data['commissionCost'] = int(data['realSaleCost']*(data['commissionRate']/100)/100)
                 data['settlementCost'] = data['realSaleCost']-data['commissionCost']
                 data['marginCost'] = data['settlementCost'] - data['firstCost']
                 data['discountRate'] = float(data['realSaleCost'])/float(data['regularCost'])*100
@@ -818,7 +818,7 @@ def registerSaleList(goodsTag):
 
             
             query = f"INSERT INTO goods_sale (goods_tag, sale_date, cost, commission_rate, seller_tag, description, customer, order_number, invoice_number, receiver_name, receiver_phone_number, receiver_address, user_id, register_date, register_type) "
-            query += f"VALUES ('{goodsTag}', '{sale_date}', {cost}, {commission_rate}, {seller_tag}, '{description}', '{customer}', '{order_number}', '{invoice_number}', '{receiver_name}', '{receiver_phone_number}', '{receiver_address}', '{user_id}'), CURRENT_TIMESTAMP, {register_type};"
+            query += f" VALUES ('{goodsTag}', '{sale_date}', {cost}, {commission_rate}, {seller_tag}, '{description}', '{customer}', '{order_number}', '{invoice_number}', '{receiver_name}', '{receiver_phone_number}', '{receiver_address}', '{user_id}', CURRENT_TIMESTAMP, {register_type});"
             mysql_cursor.execute(query)
                 
             query = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{goodsTag}';"
@@ -831,12 +831,15 @@ def registerSaleList(goodsTag):
             else:
                 index = index_row[0] + 1
 
-            query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date "
-            query += f"VALUES ('{goodsTag}',{index},'판매처리',11,{register_type},'{user_id}',CURRENT_TIMESTAMP);"
+            query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date) "
+            query += f" VALUES ('{goodsTag}',{index},'판매처리',11,{register_type},'{user_id}',CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
 
             query = f"UPDATE goods SET goods.status = 11, sale_date = '{sale_date}' WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
+
+            send_data['result'] = "SUCCESS"
+            send_data['tag'] = goodsTag
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}

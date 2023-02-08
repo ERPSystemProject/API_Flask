@@ -422,7 +422,7 @@ class partNumberInventoryDetailApiList(Resource):
         '''
         get detail inventory list by part number
         '''
-        args = part_number_inventory_list_query_parser.parse_args()
+        args = part_number_inventory_detail_query_parser.parse_args()
         res = requests.get(f"http://{management_url}/partNumber/{partNumber}", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

@@ -21,7 +21,7 @@ consignment_query_parser.add_argument('startDate', type=str, help='search start 
 consignment_query_parser.add_argument('endDate', type=str, help='search end date')
 consignment_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 consignment_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-consignment_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+consignment_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 consignment_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 consignment_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 consignment_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -47,7 +47,6 @@ consignment_calculate_detail_query_parser.add_argument('endDate', type=str, help
 
 upload_parser = reqparse.RequestParser()
 upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload', action='append')
-upload_parser.add_argument('type', location='args', type=int, help='type | 1: goods image, 2: import certificate images')
 
 consignment_list_fields = consignment_ns.model('consignment list fields', {
     'tag':fields.String(description='goods tag',required=True,example='113AB1611120BC149'),
@@ -55,19 +54,26 @@ consignment_list_fields = consignment_ns.model('consignment list fields', {
     'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
     'supplierType':fields.String(description='supplier type',required=True,example='type'),
     'supplierName':fields.String(description='supplier name',required=True,example='supplier name'),
+    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
     'blNumber':fields.String(description='BL number',required=True,example='-'),
     'season':fields.String(description='season',required=True,example='2022F/W'),
     'imageUrl':fields.String(description='image url',required=True,example='url'),
     'brand':fields.String(description='brand name',required=True,example='A.p.c.'),
+    'brandTag':fields.String(description='brand tag',required=True,example='AP'),
     'category':fields.String(description='category name',required=True,example='Bag'),
+    'categoryTag':fields.String(description='category tag',required=True,example='bag'),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
     'sex':fields.String(description='sex',required=True,example='male'),
+    'sexTag':fields.Integer(description='sex tag',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
     'size':fields.String(description='size',required=True,example='M'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
     'saleDate':fields.String(description='sale date',required=True,example='2022-11-10'),
     'office':fields.String(description='office name',required=True,example='office'),
+    'officeTag':fields.Integer(descripiton='office tag',required=True,example=1),
+    'status':fields.String(description='goods status',required=True,example='normal'),
+    'firstCost':fields.Integer(description='first cost',required=True,example=100000),
     'cost':fields.Integer(description='cost',required=True,example=0),
     'regularCost':fields.Integer(description='regular cost',required=True,example=1000000),
     'saleCost':fields.Integer(description='sale cost',required=True,example=900000),
@@ -94,7 +100,7 @@ consignment_register_fields = consignment_ns.model('consignment register fields'
     'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
     'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'sexTag':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -110,8 +116,7 @@ consignment_register_fields = consignment_ns.model('consignment register fields'
     'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
     'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
     'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
-    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
-    'userId':fields.String(description='user ID',required=True,example='admin')
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000)
 })
 
 consignment_modify_fields = consignment_ns.model('consignment modify fields', {
@@ -125,7 +130,7 @@ consignment_modify_fields = consignment_ns.model('consignment modify fields', {
     'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
     'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'sexTag':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -141,8 +146,7 @@ consignment_modify_fields = consignment_ns.model('consignment modify fields', {
     'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
     'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
     'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
-    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
-    'userId':fields.String(description='user ID',required=True,example='admin')
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000)
 })
 
 consignment_register_response_fields = consignment_ns.model('consignment register response fields',{
@@ -154,17 +158,24 @@ consignment_base_information_fields = consignment_ns.model('consignment base inf
     'stockingDate':fields.String(description='stocking date',required=True,example='2022-11-02'),
     'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
     'registerDate':fields.String(description='register date',required=True,example='2022-11-03'),
+    'supplierType':fields.String(description='supplier type',required=True,example='supplier type'),
     'supplier':fields.String(description='supplier',required=True,example='supplier'),
+    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
     'office':fields.String(description='office',required=True,example='office'),
+    'officeTag':fields.Integer(description='office tag',required=True,example=1),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
-    'brand':fields.String(description='brand Tag',required=True,example='AP'),
-    'category':fields.String(description='category Tag',required=True,example='BAG'),
+    'brand':fields.String(description='brand',required=True,example='A.P.C'),
+    'brandTag':fields.String(description='brand tag',required=True,example='AP'),
+    'category':fields.String(description='category',required=True,example='BAG'),
+    'categoryTag':fields.String(description='category tag',required=True,example='bag'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
     'sex':fields.String(description='sex',required=True,example='male'),
+    'sexTag':fields.Integer(description='sex tag',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
     'season':fields.String(description='season',required=True,example='2022F/W'),
+    'status':fields.String(description='goods status',required=True,example='status'),
     'blNumber':fields.String(description='BL number',required=True,example='-'),
     'description':fields.String(description='description',required=True,example='memo')
 })
@@ -223,24 +234,14 @@ get_consignment_detail_fields = consignment_ns.model('consignment detail get fie
     'goodsHistory':fields.List(fields.Nested(consignment_history_fields))
 })
 
-consignment_calculate_fields = consignment_ns.model('consignment calculate fields', {
-    'index':fields.Integer(description='index',required=True,example=1),
-    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
-    'supplierName':fields.String(description='supplier name',required=True,example='supplier'),
-    'stockCount':fields.Integer(description='total stock count',required=True,example=100),
-    'saleCount':fields.Integer(description='total sale count',required=True,example=100),
-    'returnCount':fields.Integer(description='total return count',required=True,example=100),
-    'remainCount':fields.Integer(description='total remain count',required=True,example=100),
-    'stockCost':fields.Integer(description='total stock cost',required=True,example=1000000),
-    'saleCost':fields.Integer(description='total sale cost',required=True,example=1000000),
-    'returnCost':fields.Integer(description='total return cost',required=True,example=1000000),
-    'remainCost':fields.Integer(description='total remain cost',required=True,example=1000000),
-    'calculateCost':fields.Integer(description='total calculate cost',required=True,example=1000000)
+table_fields = consignment_ns.model('consignment table fields', {
+    'column':fields.List(fields.String(description='column name',required=True,example='tag')),
+    'rows':fields.List(fields.List(fields.String(description='row data',required=True,example='data')))
 })
 
 consignment_calculate_response_fields = consignment_ns.model('consignment calculate response fields',{
     'result':fields.String(description='result',required=True,example='SUCCESS'),
-    'list':fields.List(fields.Nested(consignment_calculate_fields)),
+    'table':fields.Nested(table_fields),
     'totalSearchResult':fields.Integer(description='search result total',required=True,example=123),
     'totalStockCount':fields.Integer(description='total stock count',required=True,example=100),
     'totalSaleCount':fields.Integer(description='total sale count',required=True,example=100),
@@ -254,39 +255,10 @@ consignment_calculate_response_fields = consignment_ns.model('consignment calcul
     'totalPage':fields.Integer(description="totalPage", required=True, example=10)
 })
 
-consignment_calculate_detail_fields = consignment_ns.model('consignment calculate detail fields', {
-    'tag':fields.String(description='goods tag',required=True,example='113AB1611120BC149'),
-    'stockingDate':fields.String(description='stocking date',required=True,example='2022-11-02'),
-    'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
-    'registerDate':fields.String(description='register date',required=True,example='2022-11-03'),
-    'supplierType':fields.String(description='supplier type',required=True,example='type'),
-    'supplierName':fields.String(description='supplier name',required=True,example='supplier name'),
-    'blNumber':fields.String(description='BL number',required=True,example='-'),
-    'season':fields.String(description='season',required=True,example='2022F/W'),
-    'imageUrl':fields.String(description='image url',required=True,example='url'),
-    'brand':fields.String(description='brand name',required=True,example='A.p.c.'),
-    'category':fields.String(description='category name',required=True,example='Bag'),
-    'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
-    'sex':fields.String(description='sex',required=True,example='male'),
-    'color':fields.String(description='color',required=True,example='BLACK'),
-    'material':fields.String(description='material',required=True,example='100% COTTON'),
-    'size':fields.String(description='size',required=True,example='M'),
-    'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'saleDate':fields.String(description='sale date',required=True,example='2022-11-10'),
-    'office':fields.String(description='office name',required=True,example='office'),
-    'cost':fields.Integer(description='cost',required=True,example=0),
-    'firstCost':fields.Integer(description='first cost',required=True,example=800000),
-    'regularCost':fields.Integer(description='regular cost',required=True,example=1000000),
-    'saleCost':fields.Integer(description='sale cost',required=True,example=900000),
-    'discountCost':fields.Integer(description='discount cost',required=True,example=850000),
-    'managementCost':fields.Integer(description='management cost',required=True,example=50000),
-    'description':fields.String(description='description',required=True,example='description')
-})
-
 consignment_calculate_detail_response_fields = consignment_ns.model('consignment calculate detail response fields',{
     'supplier':fields.String(description='supplier name',required=True,example='supplier'),
     'totalCount':fields.Integer(description='total count',required=True,example=100),
-    'list':fields.List(fields.Nested(consignment_calculate_detail_fields))
+    'table':fields.Nested(table_fields)
 })
 
 consignment_return_response_fields = consignment_ns.model('consignment return response fields', {
@@ -340,7 +312,9 @@ class consignmentDetailApiList(Resource):
         '''
         adjust consignment information
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.put(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -353,7 +327,9 @@ class consignmentDetailApiList(Resource):
         '''
         register consignment
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.post(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -392,7 +368,7 @@ class consignmentImageApiList(Resource):
                 file_ = upload_file.read()
                 type_ = upload_file.content_type
                 file_list.append(('files',(filename,file_,type_)))
-        res = requests.post(f"http://{management_url}/{goodsTag}/image", files=file_list, params=args, timeout=3)
+        res = requests.post(f"http://{management_url}/{goodsTag}/image", files=file_list, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
@@ -440,7 +416,7 @@ class consignmentCalculateApiList(Resource):
         get consignment calculate list 
         '''
         args = consignment_calculate_query_parser.parse_args()
-        res = requests.get(f"http://{management_url}/firstCost", params=args, timeout=3)
+        res = requests.get(f"http://{management_url}/calculate", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
@@ -456,6 +432,6 @@ class consignmentCalculateDetailApiList(Resource):
         get consignment calculate Detail 
         '''
         args = consignment_calculate_detail_query_parser.parse_args()
-        res = requests.get(f"http://{management_url}/firstCost/{supplierTag}", params=args, timeout=3)
+        res = requests.get(f"http://{management_url}/calculate/{supplierTag}", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

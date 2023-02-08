@@ -21,7 +21,7 @@ goods_query_parser.add_argument('startDate', type=str, help='search start date')
 goods_query_parser.add_argument('endDate', type=str, help='search end date')
 goods_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 goods_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-goods_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+goods_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 goods_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 goods_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 goods_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -41,7 +41,7 @@ first_cost_query_parser.add_argument('endDate', type=str, help='search end date'
 first_cost_query_parser.add_argument('seasonList', type=str, help='search season list', action='append')
 first_cost_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
 first_cost_query_parser.add_argument('categoryTagList', type=str, help='search category tag list', action='append')
-first_cost_query_parser.add_argument('sex', type=int, help='search sex | 0:unisex, 1:male, 2:female')
+first_cost_query_parser.add_argument('sexList', type=int, help='search sex | 0:unisex, 1:male, 2:female', action='append')
 first_cost_query_parser.add_argument('originList', type=str, help='search origin name list', action='append')
 first_cost_query_parser.add_argument('supplierTypeList', type=int, help='supplier type list | 1:consignment, 2:buying, 3:direct import, 4:not in stock', action='append')
 first_cost_query_parser.add_argument('supplierTagList', type=int, help='supplier tag list', action='append')
@@ -50,7 +50,6 @@ first_cost_query_parser.add_argument('searchContent', type=str, help='search con
 
 upload_parser = reqparse.RequestParser()
 upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload', action='append')
-upload_parser.add_argument('type', location='args', type=int, help='type | 1: goods image, 2: import certificate images')
 
 goods_list_fields = goods_ns.model('goods list fields', {
     'tag':fields.String(description='goods tag',required=True,example='113AB1611120BC149'),
@@ -58,19 +57,24 @@ goods_list_fields = goods_ns.model('goods list fields', {
     'importDate':fields.String(description='import date',required=True,example='2022-11-01'),
     'supplierType':fields.String(description='supplier type',required=True,example='type'),
     'supplierName':fields.String(description='supplier name',required=True,example='supplier name'),
+    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
     'blNumber':fields.String(description='BL number',required=True,example='-'),
     'season':fields.String(description='season',required=True,example='2022F/W'),
     'imageUrl':fields.String(description='image url',required=True,example='url'),
     'brand':fields.String(description='brand name',required=True,example='A.p.c.'),
+    'brandTag':fields.String(description='brand tag',required=True,example='AP'),
     'category':fields.String(description='category name',required=True,example='Bag'),
+    'categoryTag':fields.String(description='category tag',required=True,example='bag'),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
     'sex':fields.String(description='sex',required=True,example='male'),
+    'sexTag':fields.Integer(description='sex tag',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
     'size':fields.String(description='size',required=True,example='M'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
     'saleDate':fields.String(description='sale date',required=True,example='2022-11-10'),
     'office':fields.String(description='office name',required=True,example='office'),
+    'officeTag':fields.Integer(descripiton='office tag',required=True,example=1),
     'status':fields.String(description='goods status',required=True,example='normal'),
     'firstCost':fields.Integer(description='first cost',required=True,example=100000),
     'cost':fields.Integer(description='cost',required=True,example=0),
@@ -97,7 +101,7 @@ goods_register_fields = goods_ns.model('goods register fields', {
     'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
     'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'sexTag':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -113,8 +117,7 @@ goods_register_fields = goods_ns.model('goods register fields', {
     'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
     'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
     'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
-    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
-    'userId':fields.String(description='user ID',required=True,example='admin')
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000)
 })
 
 goods_modify_fields = goods_ns.model('goods modify fields', {
@@ -128,7 +131,7 @@ goods_modify_fields = goods_ns.model('goods modify fields', {
     'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
     'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
-    'sex':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
+    'sexTag':fields.Integer(description='sec | 0:unisex, 1:male, 2:female',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -144,8 +147,7 @@ goods_modify_fields = goods_ns.model('goods modify fields', {
     'managementCostRate':fields.Float(description='management cost rate',required=True,example=50.5),
     'departmentStoreCost':fields.Integer(description='department store cost',required=True,example=800000),
     'outletCost':fields.Integer(description='outlet cost',required=True,example=800000),
-    'firstCost':fields.Integer(description='first cost',required=True,example=700000),
-    'userId':fields.String(description='user ID',required=True,example='admin')
+    'firstCost':fields.Integer(description='first cost',required=True,example=700000)
 })
 
 goods_register_response_fields = goods_ns.model('goods register response fields',{
@@ -159,12 +161,17 @@ goods_base_information_fields = goods_ns.model('goods base information fields', 
     'registerDate':fields.String(description='register date',required=True,example='2022-11-03'),
     'supplierType':fields.String(description='supplier type',required=True,example='supplier type'),
     'supplier':fields.String(description='supplier',required=True,example='supplier'),
+    'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
     'office':fields.String(description='office',required=True,example='office'),
+    'officeTag':fields.Integer(description='office tag',required=True,example=1),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
-    'brand':fields.String(description='brand Tag',required=True,example='AP'),
-    'category':fields.String(description='category Tag',required=True,example='BAG'),
+    'brand':fields.String(description='brand',required=True,example='A.P.C'),
+    'brandTag':fields.String(description='brand tag',required=True,example='AP'),
+    'category':fields.String(description='category',required=True,example='BAG'),
+    'categoryTag':fields.String(description='category tag',required=True,example='bag'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
     'sex':fields.String(description='sex',required=True,example='male'),
+    'sexTag':fields.Integer(description='sex tag',required=True,example=1),
     'color':fields.String(description='color',required=True,example='BLACK'),
     'size':fields.String(description='size',required=True,example='M'),
     'material':fields.String(description='material',required=True,example='100% COTTON'),
@@ -344,7 +351,9 @@ class goodsDetailApiList(Resource):
         '''
         adjust goods information
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.put(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -357,7 +366,9 @@ class goodsDetailApiList(Resource):
         '''
         register goods
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.post(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -396,7 +407,7 @@ class goodsImageApiList(Resource):
                 file_ = upload_file.read()
                 type_ = upload_file.content_type
                 file_list.append(('files',(filename,file_,type_)))
-        res = requests.post(f"http://{management_url}/{goodsTag}/image", files=file_list, params=args, timeout=3)
+        res = requests.post(f"http://{management_url}/{goodsTag}/image", files=file_list, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 

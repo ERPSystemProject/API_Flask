@@ -5,7 +5,7 @@ import sys
 
 import flask
 from flask_restx import Api, Resource, Namespace, fields, reqparse
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import werkzeug
 import requests
 import json
@@ -37,6 +37,7 @@ board_list_fields = community_ns.model('board list fields', {
     'commentCount':fields.Integer(description='comment Count',required=True,example=0),
     'writeOffice':fields.String(description='write Office',required=True,example='write Office'),
     'writer':fields.String(description='writer name',required=True,example='writer'),
+    'writerUserId':fields.String(description='writer user id',required=True,example='admin'),
     'registerDate':fields.String(description='registerDate',required=True,example='2022-01-01 12:00'),
     'viewCount':fields.Integer(description='viewCount',required=True,example=0)
 })
@@ -59,8 +60,7 @@ post_board_request_fields = community_ns.model('post board request', {
     'offices':fields.List(fields.Integer(description='target offices ID | 0: all', required=True, example=0)),
     'boardType':fields.Integer(description='board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request', required=True, example=0),
     'title':fields.String(description='title', required=True, example='title'),
-    'content':fields.String(description='content',required=True,example='content'),
-    'userId':fields.String(description='writer ID',required=True,example='admin')
+    'content':fields.String(description='content',required=True,example='content')
 })
 
 post_board_response_fields = community_ns.model('post board response', {
@@ -163,7 +163,9 @@ class communityApiList(Resource):
         post board
         board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.post(f"http://{management_url}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -191,7 +193,9 @@ class communityBoardApiList(Resource):
         adjust board
         board Type | 0: notice, 1: register goods, 2: exchange request, 3: questions, 4: delivery request, 5: return request, 6: holding request, 7: ERP fix, 8: etc, 9: Purchasing Team Request
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.put(f"http://{management_url}/{boardIndex}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

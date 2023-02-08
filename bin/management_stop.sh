@@ -24,4 +24,5 @@ kill_proc consignment_management.py
 kill_proc move_management.py
 kill_proc sale_management.py
 kill_proc inventory_management.py
+kill_proc revenue_management.py
 kill_proc etc_management.py

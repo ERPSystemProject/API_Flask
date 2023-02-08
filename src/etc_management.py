@@ -87,6 +87,78 @@ def getOfficeDropBoxList():
     finally:
         return flask.make_response(flask.jsonify(send_data), status_code)
 
+#from office 드롭박스 리스트 조회
+@app.route('/fromOffices', methods=['GET'])
+def getFromOfficeDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT office_tag, office_name FROM office WHERE office_tag > 0 and office_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT office_tag, office_name FROM office WHERE office_tag > 0;"
+        mysql_cursor.execute(query)
+        office_rows = mysql_cursor.fetchall()
+
+        officeList = list()
+        for office_row in office_rows:
+            data = dict()
+            data['tag'] = office_row[0]
+            data['name'] = office_row[1]
+            officeList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '출발 영업소'
+        send_data['items'] = officeList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#to office 드롭박스 리스트 조회
+@app.route('/toOffices', methods=['GET'])
+def getToOfficeDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT office_tag, office_name FROM office WHERE office_tag > 0 and office_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT office_tag, office_name FROM office WHERE office_tag > 0;"
+        mysql_cursor.execute(query)
+        office_rows = mysql_cursor.fetchall()
+
+        officeList = list()
+        for office_row in office_rows:
+            data = dict()
+            data['tag'] = office_row[0]
+            data['name'] = office_row[1]
+            officeList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '도착 영업소'
+        send_data['items'] = officeList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
 #brand 드롭박스 리스트 조회
 @app.route('/brands', methods=['GET'])
 def getBrandDropBoxList():
@@ -344,6 +416,70 @@ def getGoodsStatusDropBoxList():
         send_data['result'] = 'SUCCESS'
         send_data['name'] = '상품상태'
         send_data['items'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#seller types 드롭박스 리스트 조회
+@app.route('/sellerTypes', methods=['GET'])
+def getSellerTypesDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        dateList = list()
+        rows = ['도매','위탁','직영','행사','홈쇼핑','온라인','소매','기타']
+        for index, row in enumerate(rows):
+            data = dict()
+            data['tag'] = index + 1
+            data['name'] = row
+            dateList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '판매처유형'
+        send_data['items'] = dateList
+
+    except Exception as e:
+        send_data = {"result": f"Error : {e}"}
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    finally:
+        return flask.make_response(flask.jsonify(send_data), status_code)
+
+#seller 드롭박스 리스트 조회
+@app.route('/sellers', methods=['GET'])
+def getSellerDropBoxList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    try:
+        params = request.args.to_dict()
+
+        if 'keyword' in params:
+            query = f"SELECT seller_tag, seller_name FROM seller WHERE seller_name like '%{params['keyword']}%';"
+        else:
+            query = "SELECT seller_tag, seller_name FROM seller;"
+        mysql_cursor.execute(query)
+        rows = mysql_cursor.fetchall()
+
+        dataList = list()
+        for row in rows:
+            data = dict()
+            data['tag'] = row[0]
+            data['name'] = row[1]
+            dataList.append(data)
+
+        send_data['result'] = 'SUCCESS'
+        send_data['name'] = '판매처'
+        send_data['items'] = dataList
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}

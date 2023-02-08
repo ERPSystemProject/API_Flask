@@ -51,6 +51,38 @@ class officeDropBox(Resource):
         result = json.loads(res.text)
         return result, res.status_code
 
+@etc_ns.route('/fromOffices')
+class fromOfficeDropBox(Resource):
+
+    @etc_ns.expect(keyword_query_parser)
+    @etc_ns.response(200, 'OK', drop_box_list_response_fields)
+    @etc_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get from office drop box list 
+        '''
+        args = keyword_query_parser.parse_args()
+        res = requests.get(f"http://{management_url}/fromOffices", params=args, timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@etc_ns.route('/toOffices')
+class toOfficeDropBox(Resource):
+
+    @etc_ns.expect(keyword_query_parser)
+    @etc_ns.response(200, 'OK', drop_box_list_response_fields)
+    @etc_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get to office drop box list 
+        '''
+        args = keyword_query_parser.parse_args()
+        res = requests.get(f"http://{management_url}/toOffices", params=args, timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
 @etc_ns.route('/brands')
 class brandDropBox(Resource):
 
@@ -170,5 +202,34 @@ class goodsStatusDropBox(Resource):
         get goods status drop box list 
         '''
         res = requests.get(f"http://{management_url}/goodsStatus", timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@etc_ns.route('/sellerTypes')
+class sellerTypeDropBox(Resource):
+
+    @etc_ns.response(200, 'OK', drop_box_list_response_fields)
+    @etc_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get seller types drop box list 
+        '''
+        res = requests.get(f"http://{management_url}/sellerTypes", timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@etc_ns.route('/sellers')
+class sellerDropBox(Resource):
+
+    @etc_ns.expect(keyword_query_parser)
+    @etc_ns.response(200, 'OK', drop_box_list_response_fields)
+    @etc_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get sellers drop box list 
+        '''
+        res = requests.get(f"http://{management_url}/sellers", timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

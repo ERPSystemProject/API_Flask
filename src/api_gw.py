@@ -33,6 +33,7 @@ import move_resource
 import sale_resource
 import etc_resource
 import inventory_resource
+import revenue_resource
 
 from datetime import datetime
 from datetime import timedelta
@@ -71,6 +72,7 @@ api.add_namespace(consignment_resource.consignment_ns, path='/ERPSystem/v1.0/con
 api.add_namespace(move_resource.move_ns, path='/ERPSystem/v1.0/move')
 api.add_namespace(sale_resource.sale_ns, path='/ERPSystem/v1.0/sale')
 api.add_namespace(inventory_resource.inventory_ns, path='/ERPSystem/v1.0/inventory')
+api.add_namespace(revenue_resource.revenue_ns, path='/ERPSystem/v1.0/revenue')
 api.add_namespace(system_resource.system_ns, path='/ERPSystem/v1.0/system')
 api.add_namespace(etc_resource.etc_ns, path='/ERPSystem/v1.0/etc')
 

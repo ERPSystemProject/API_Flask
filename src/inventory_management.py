@@ -1065,7 +1065,7 @@ def getDetailBrandInventoryList(brandTag):
             data = dict()
             data['tag'] = goods_row[0]
 
-            query = f"SELECT goods_history.status FROM goods_history WHERE goods_tag = '{data['tag']}' and goods_history IN (SELECT MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{data['tag']}' and update_date < {search_date});"
+            query = f"SELECT goods_history.status FROM goods_history WHERE goods_tag = '{data['tag']}' and goods_history_index IN (SELECT MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{data['tag']}' and update_date < {search_date});"
             mysql_cursor.execute(query)
             status_row = mysql_cursor.fetchone()
             goods_status = int(status_row[0])
@@ -1384,7 +1384,7 @@ def getDetailOfficeInventoryList(officeTag):
             data = dict()
             data['tag'] = goods_row[0]
 
-            query = f"SELECT goods_history.status FROM goods_history WHERE goods_tag = '{data['tag']}' and goods_history IN (SELECT MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{data['tag']}' and update_date < {search_date});"
+            query = f"SELECT goods_history.status FROM goods_history WHERE goods_tag = '{data['tag']}' and goods_history_index IN (SELECT MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{data['tag']}' and update_date < {search_date});"
             mysql_cursor.execute(query)
             status_row = mysql_cursor.fetchone()
             goods_status = int(status_row[0])

@@ -184,6 +184,7 @@ def getNoticeBoards():
             user_row = mysql_cursor.fetchone()
             data['writeOffice'] = user_row[0]
             data['writer'] = user_row[1]
+            data['writerUserId'] =user_id
 
             query = f"SELECT office_name FROM office WHERE office_tag in (SELECT office_tag FROM community_board_target WHERE community_board_target.index = {data['boardIndex']});"
             mysql_cursor.execute(query)
@@ -312,6 +313,7 @@ def getRequestBoards():
             user_row = mysql_cursor.fetchone()
             data['writeOffice'] = user_row[0]
             data['writer'] = user_row[1]
+            data['writerUserId'] = user_id
 
             query = f"SELECT office_name FROM office WHERE office_tag in (SELECT office_tag FROM community_board_target WHERE community_board_target.index = {data['boardIndex']});"
             mysql_cursor.execute(query)
