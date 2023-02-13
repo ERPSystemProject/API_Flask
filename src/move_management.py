@@ -356,6 +356,10 @@ def moveList():
                 send_data = {"result": "물품 태그 리스트가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
+            if len(request_body['goodsTagList']) == 0:
+                send_data = {"result": "물품 태그 리스트가 입력되지 않았습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
             if not 'exportDate' in request_body:
                 send_data = {"result": "출고일이 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
