@@ -1104,10 +1104,10 @@ def getConsignmentCalculateList():
                         condition_query = f"WHERE size like '%{searchContent}%'"
         if condition_query:
             condition_query = condition_query + f" GROUP BY supplier_tag"
-            query = f"SELECT supplier_tag, count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods" + condition_query + limit_query 
+            query = f"SELECT supplier_tag, count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods " + condition_query + limit_query 
         else:
             condition_query = f" GROUP BY supplier_tag"
-            query = f"SELECT supplier_tag, count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods" + condition_query + limit_query 
+            query = f"SELECT supplier_tag, count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods " + condition_query + limit_query 
         mysql_cursor.execute(query)
         consignment_rows = mysql_cursor.fetchall()
         send_data['table'] = dict()
@@ -1131,11 +1131,12 @@ def getConsignmentCalculateList():
             data.append(consignment_row[5])
             data.append(consignment_row[6])
             data.append(consignment_row[7])
-            data.append(consignment_row[5])
+            data.append(consignment_row[8])
+            data.append(consignment_row[6])
 
             send_data['table']['rows'].append(data)
 
-        query = "SELECT count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods" + condition_query + ';'
+        query = "SELECT count(goods_tag), count(case when status=11 then 1 end), count(case when status=8 then 1 end), count(case when status=4 then 1 end), sum(first_cost), sum(if(status=11,first_cost,0)), sum(if(status=8,first_cost,0)), sum(if(status=4,first_cost,0)) FROM goods " + condition_query + ';'
         mysql_cursor.execute(query)
         count_rows = mysql_cursor.fetchall()
         send_data['totalSearchResult'] = len(count_rows)
@@ -1183,7 +1184,7 @@ def firstCostDetailAPIList(supplierTag):
                 send_data = {"result": "위탁 정산 상세 타입이 입력되지 않았습니다.\n1: 입고, 2: 판매, 3: 회수, 4: 재고"}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            detail_type = params['type']
+            detail_type = int(params['type'])
             if detail_type < 1 or detail_type > 4:
                 send_data = {"result": "위탁 정산 상세 타입이 올바르지 않습니다.\n1: 입고, 2: 판매, 3: 회수, 4: 재고"}
                 status_code = status.HTTP_400_BAD_REQUEST

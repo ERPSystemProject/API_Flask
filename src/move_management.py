@@ -1424,7 +1424,7 @@ def statusPartNumberList():
                             condition_query = f" WHERE size like '%{searchContent}%'"
             
             if 'approve' in params:
-                approve = params['approve']
+                approve = int(params['approve'])
                 if approve < 0 or approve >1:
                     send_data = {"result": "승인 여부가 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
@@ -1448,7 +1448,7 @@ def statusPartNumberList():
             status_rows = mysql_cursor.fetchall()
             
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','공급처 유형','공급처','브랜드','상품종류','이미지','품번','입고일','색상','소재','원산지','총 출고 건수','출고영업소 / 건수','총 승인 건수','도착영업소 / 승인','총 미승인 건수','도착영업소 / 미승인','COST','원가','정상 판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','관리원가']
+            send_data['table']['column'] = ['검색 번호','공급처 유형','공급처','브랜드','상품종류','이미지','품번','입고일','색상','소재','원산지','총 출고 건수','출고영업소 / 건수','총 승인 건수','도착영업소 / 승인','총 미승인 건수','도착영업소 / 미승인','COST','원가','정상 판매가','판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','관리원가']
             send_data['table']['rows'] = list()
 
             for index,status_row in enumerate(status_rows):
@@ -1485,7 +1485,7 @@ def statusPartNumberList():
                 data.append(status_row[7])
                 data.append(status_row[8])
 
-                query = f"SELECT status, (SELECT office_name FROM office WHERE office_tag = from_office_tag) as from_office, (SELECT office_name FROM office WHERE office_tag = to_office_tag) as to_office FROM goods_movement WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE part_number = '{data['partNumber']}' and stocking_date = '{data['stockingDate']}');"
+                query = f"SELECT status, (SELECT office_name FROM office WHERE office_tag = from_office_tag) as from_office, (SELECT office_name FROM office WHERE office_tag = to_office_tag) as to_office FROM goods_movement WHERE goods_tag IN (SELECT goods_tag FROM goods WHERE part_number = '{partNumber}' and stocking_date = '{status_row[5]}');"
                 mysql_cursor.execute(query)
                 goods_rows = mysql_cursor.fetchall()
 
@@ -1520,7 +1520,7 @@ def statusPartNumberList():
 
                 fromOffice = None
                 for key in formOfficeDict:
-                    if fromOffice:
+                    if not fromOffice:
                         fromOffice = f"{key}\t/ {formOfficeDict[key]}"
                     else:
                         fromOffice = fromOffice + f"\n{key}\t/ {formOfficeDict[key]}"
@@ -1530,7 +1530,7 @@ def statusPartNumberList():
 
                 toOfficeApprove = None
                 for key in toOfficeApproveDict:
-                    if toOfficeApprove:
+                    if not toOfficeApprove:
                         toOfficeApprove = f"{key}\t/ {toOfficeApproveDict[key]}"
                     else:
                         toOfficeApprove = toOfficeApprove + f"\n{key}\t/ {toOfficeApproveDict[key]}"
@@ -1540,7 +1540,7 @@ def statusPartNumberList():
 
                 toOfficeUnApprove = None
                 for key in toOfficeUnApproveDict:
-                    if toOfficeUnApprove:
+                    if not toOfficeUnApprove:
                         toOfficeUnApprove = f"{key}\t/ {toOfficeUnApproveDict[key]}"
                     else:
                         toOfficeUnApprove = toOfficeUnApprove + f"\n{key}\t/ {toOfficeUnApproveDict[key]}"
@@ -1549,6 +1549,7 @@ def statusPartNumberList():
                 data.append(status_row[9])
                 data.append(status_row[10])
                 data.append(status_row[11])
+                data.append(status_row[15])
                 data.append(status_row[12])
                 data.append(status_row[13])
                 data.append(status_row[14])
@@ -1625,7 +1626,7 @@ def statusPartNumberDetailList():
             send_data['stockingDate'] = stocking_date
             send_data['partNumber'] = part_number
             
-            query = f"SELECT export_date, stocking_date, import_date, season, part_number, goods_tag, (SELECT brand_name FROM brand WHERE brand.brand_tag = goods.brand_tag) as brand, (SELECT category_name FROM category WHERE category.category_tag = goods.category_tag), sex, color, material, size, origin_name, supplier_tag, status, cost, first_cost, regular_cost, department_store_cost, event_cost, outlet_cost, sale_cost, discount_cost, description, (SELECT move_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as mover, (SELECT goods_movement.status FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as move_status, (SELECT approver_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as approver, register_date FROM goods WHERE stocking_date = '{stocking_date}' and part_number = '{part_number}';"
+            query = f"SELECT (SELECT export_date FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as export_date, stocking_date, import_date, season, part_number, goods_tag, (SELECT brand_name FROM brand WHERE brand.brand_tag = goods.brand_tag) as brand, (SELECT category_name FROM category WHERE category.category_tag = goods.category_tag), sex, color, material, size, origin_name, supplier_tag, status, cost, first_cost, regular_cost, department_store_cost, event_cost, outlet_cost, sale_cost, discount_cost, description, (SELECT move_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as mover, (SELECT goods_movement.status FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as move_status, (SELECT approver_user FROM goods_movement WHERE goods_movement.goods_tag = goods.goods_tag) as approver, register_date FROM goods WHERE stocking_date = '{stocking_date}' and part_number = '{part_number}';"
             mysql_cursor.execute(query)
             status_rows = mysql_cursor.fetchall()
             
