@@ -32,7 +32,7 @@ move_list_query_parser.add_argument('searchContent', type=str, help='search cont
 move_approve_list_query_parser = reqparse.RequestParser()
 move_approve_list_query_parser.add_argument('limit', type=int, required=True, default=15, help='limit')
 move_approve_list_query_parser.add_argument('page', type=int, required=True, default=1, help='current page')
-move_approve_list_query_parser.add_argument('dateType', type=int, default=0, help='date type : 0:stocking date, 1:import date, 2: register date')
+move_approve_list_query_parser.add_argument('dateType', type=int, default=0, help='date type : 0: request date, 1:export date, 2:stocking date, 3:import date, 4: register date')
 move_approve_list_query_parser.add_argument('startDate', type=str, help='search start date')
 move_approve_list_query_parser.add_argument('endDate', type=str, help='search end date')
 move_approve_list_query_parser.add_argument('brandTagList', type=str, help='search brand tag list', action='append')
@@ -89,6 +89,9 @@ office_move_detail_query_parser.add_argument('toOfficeTag', type=int, required=T
 part_number_move_detail_query_parser = reqparse.RequestParser()
 part_number_move_detail_query_parser.add_argument('stockingDate', type=str, required=True, help='stocking date')
 part_number_move_detail_query_parser.add_argument('partNumber', type=str, required=True, help='part number')
+
+upload_parser = reqparse.RequestParser()
+upload_parser.add_argument('files', location='files', type=werkzeug.datastructures.FileStorage, help='file upload', action='append')
 
 table_fields = move_ns.model('move table fields', {
     'column':fields.List(fields.String(description='column name',required=True,example='tag')),
@@ -314,6 +317,14 @@ part_number_move_detail_response_fields = move_ns.model('part number move detail
     'table':fields.Nested(table_fields)
 })
 
+excel_response_fields = move_ns.model('move excel example file fields', {
+    'excel':fields.String(descripiton='excel url',required=True,example='http://excel.url')
+})
+
+excel_post_response_fields = move_ns.model('move post excel response fields', {
+    'result':fields.String(descripiton='result',required=True,example='SUCCESS')
+})
+
 #config 불러오기
 f = open('../config/config.yaml')
 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -350,6 +361,43 @@ class moveApiList(Resource):
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         request_body['userId'] = id
         res = requests.post(f"http://{management_url}", data=json.dumps(request_body), timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@move_ns.route('/excel')
+class moveExcelApiList(Resource):
+
+    @move_ns.expect(upload_parser)
+    @move_ns.response(201, 'OK', excel_post_response_fields)
+    @move_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def post(self):
+        '''
+        register move excel
+        '''
+        id = get_jwt_identity()
+        args = upload_parser.parse_args()
+        args['userId'] = id
+        file_list = list()
+        for upload_file_info in flask.request.files:
+            upload_files = flask.request.files.getlist(upload_file_info)
+            for upload_file in upload_files:
+                filename = upload_file.filename
+                file_ = upload_file.read()
+                type_ = upload_file.content_type
+                file_list.append(('files',(filename,file_,type_)))
+        res = requests.post(f"http://{management_url}/excel", params=args, files=file_list)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+    @move_ns.response(200, 'OK', excel_response_fields)
+    @move_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get move example excel
+        '''
+        res = requests.get(f"http://{management_url}/excel", timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 

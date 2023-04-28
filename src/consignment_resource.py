@@ -97,6 +97,7 @@ consignment_register_fields = consignment_ns.model('consignment register fields'
     'supplierTag':fields.Integer(description='supplier tag',required=True,example=1),
     'officeTag':fields.Integer(description='office tag',required=True,example=1),
     'partNumber':fields.String(description='part number',required=True,example='EXAMPLE-001M'),
+    'goodsTag':fields.String(description='goods tag',required=True,example='tag'),
     'brandTag':fields.String(description='brand Tag',required=True,example='AP'),
     'categoryTag':fields.String(description='category Tag',required=True,example='BAG'),
     'origin':fields.String(description='origin',required=True,example='ITALY'),
@@ -266,6 +267,14 @@ consignment_return_response_fields = consignment_ns.model('consignment return re
     'tag':fields.String(description='goods tag',required=True,example='tag')
 })
 
+excel_response_fields = consignment_ns.model('consignment excel example file fields', {
+    'excel':fields.String(descripiton='excel url',required=True,example='http://excel.url')
+})
+
+excel_post_response_fields = consignment_ns.model('consignment post excel response fields', {
+    'result':fields.String(descripiton='result',required=True,example='SUCCESS')
+})
+
 #config 불러오기
 f = open('../config/config.yaml')
 config = yaml.load(f, Loader=yaml.FullLoader)
@@ -287,6 +296,62 @@ class consignmentApiList(Resource):
         '''
         args = consignment_query_parser.parse_args()
         res = requests.get(f"http://{management_url}", params=args, timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+    
+    @consignment_ns.expect(consignment_register_fields)
+    @consignment_ns.response(201, 'OK', consignment_register_response_fields)
+    @consignment_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def post(self):
+        '''
+        register consignment without goodsTag
+        '''
+        id = get_jwt_identity()
+        request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
+        if not 'goodsTag' in request_body:
+            goodsTag = f"001{request_body['brandTag']}{request_body['stockingDate'].replace('-','')}{request_body['categoryTag']}{request_body['supplierTag']}"
+        elif len(request_body['goodsTag']) < 1:
+            goodsTag = f"001{request_body['brandTag']}{request_body['stockingDate'].replace('-','')}{request_body['categoryTag']}{request_body['supplierTag']}"
+        res = requests.post(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+@consignment_ns.route('/excel')
+class consignmentExcelApiList(Resource):
+
+    @consignment_ns.expect(upload_parser)
+    @consignment_ns.response(201, 'OK', excel_post_response_fields)
+    @consignment_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def post(self):
+        '''
+        register consignment excel
+        '''
+        id = get_jwt_identity()
+        args = upload_parser.parse_args()
+        args['userId'] = id
+        file_list = list()
+        for upload_file_info in flask.request.files:
+            upload_files = flask.request.files.getlist(upload_file_info)
+            for upload_file in upload_files:
+                filename = upload_file.filename
+                file_ = upload_file.read()
+                type_ = upload_file.content_type
+                file_list.append(('files',(filename,file_,type_)))
+        res = requests.post(f"http://{management_url}/excel", params=args, files=file_list)
+        result = json.loads(res.text)
+        return result, res.status_code
+
+    @consignment_ns.response(200, 'OK', excel_response_fields)
+    @consignment_ns.doc(responses={200:'OK', 404:'Not Found', 500:'Internal Server Error'})
+    @jwt_required()
+    def get(self):
+        '''
+        get consignment example excel
+        '''
+        res = requests.get(f"http://{management_url}/excel", timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 
@@ -316,21 +381,6 @@ class consignmentDetailApiList(Resource):
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         request_body['userId'] = id
         res = requests.put(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
-        result = json.loads(res.text)
-        return result, res.status_code
-
-    @consignment_ns.expect(consignment_register_fields)
-    @consignment_ns.response(201, 'OK', consignment_register_response_fields)
-    @consignment_ns.doc(responses={201:'OK', 404:'Not Found', 500:'Internal Server Error'})
-    @jwt_required()
-    def post(self,goodsTag):
-        '''
-        register consignment
-        '''
-        id = get_jwt_identity()
-        request_body = json.loads(flask.request.get_data(), encoding='utf-8')
-        request_body['userId'] = id
-        res = requests.post(f"http://{management_url}/{goodsTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
 

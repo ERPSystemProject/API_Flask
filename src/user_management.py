@@ -83,7 +83,7 @@ def userLogin():
             send_data = {"result": "로그인 실패하였습니다. ID 또는 패스워드를 확인해 주세요."}
             status_code = status.HTTP_401_UNAUTHORIZED
             return flask.make_response(flask.jsonify(send_data), status_code)
-        query = f"SELECT community_board_flag, goods_management_flag, consignment_management_flag, move_management_flag, sell_managemant_flag, remain_management_flag, sale_management_flag, system_management_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
+        query = f"SELECT community_board_flag, community_board_1_flag, community_board_2_flag, goods_management_flag, goods_management_1_flag, goods_management_2_flag, goods_management_3_flag, consignment_management_flag, consignment_management_1_flag, consignment_management_2_flag, consignment_management_3_flag, move_management_flag, move_management_1_flag, move_management_2_flag, move_management_3_flag, move_management_4_flag, sell_management_flag, sell_management_1_flag, sell_management_2_flag, remain_management_flag, remain_management_1_flag, remain_management_2_flag, remain_management_3_flag, remain_management_4_flag, remain_management_5_flag, remain_management_6_flag, sale_management_flag, sale_management_1_flag, sale_management_2_flag, sale_management_3_flag, system_management_flag, system_management_1_flag, system_management_2_flag, system_management_3_flag, system_management_4_flag, system_management_5_flag, system_management_6_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
         mysql_cursor.execute(query)
         authority_row = mysql_cursor.fetchone()
         if not authority_row:
@@ -94,14 +94,43 @@ def userLogin():
         send_data['userId'] = user_id
         send_data['authority'] = dict()
         send_data['authority']['community_board_flag'] = authority_row[0]
-        send_data['authority']['goods_management_flag'] = authority_row[1]
-        send_data['authority']['consignment_management_flag'] = authority_row[2]
-        send_data['authority']['move_management_flag'] = authority_row[3]
-        send_data['authority']['sell_managemant_flag'] = authority_row[4]
-        send_data['authority']['remain_management_flag'] = authority_row[5]
-        send_data['authority']['sale_management_flag'] = authority_row[6]
-        send_data['authority']['system_management_flag'] = authority_row[7]
-        send_data['authority']['user_authority_management_flag'] = authority_row[8]
+        send_data['authority']['community_board_1_flag'] = authority_row[1]
+        send_data['authority']['community_board_2_flag'] = authority_row[2]
+        send_data['authority']['goods_management_flag'] = authority_row[3]
+        send_data['authority']['goods_management_1_flag'] = authority_row[4]
+        send_data['authority']['goods_management_2_flag'] = authority_row[5]
+        send_data['authority']['goods_management_3_flag'] = authority_row[6]
+        send_data['authority']['consignment_management_flag'] = authority_row[7]
+        send_data['authority']['consignment_management_1_flag'] = authority_row[8]
+        send_data['authority']['consignment_management_2_flag'] = authority_row[9]
+        send_data['authority']['consignment_management_3_flag'] = authority_row[10]
+        send_data['authority']['move_management_flag'] = authority_row[11]
+        send_data['authority']['move_management_1_flag'] = authority_row[12]
+        send_data['authority']['move_management_2_flag'] = authority_row[13]
+        send_data['authority']['move_management_3_flag'] = authority_row[14]
+        send_data['authority']['move_management_4_flag'] = authority_row[15]
+        send_data['authority']['sell_management_flag'] = authority_row[16]
+        send_data['authority']['sell_management_1_flag'] = authority_row[17]
+        send_data['authority']['sell_management_2_flag'] = authority_row[18]
+        send_data['authority']['remain_management_flag'] = authority_row[19]
+        send_data['authority']['remain_management_1_flag'] = authority_row[20]
+        send_data['authority']['remain_management_2_flag'] = authority_row[21]
+        send_data['authority']['remain_management_3_flag'] = authority_row[22]
+        send_data['authority']['remain_management_4_flag'] = authority_row[23]
+        send_data['authority']['remain_management_5_flag'] = authority_row[24]
+        send_data['authority']['remain_management_6_flag'] = authority_row[25]
+        send_data['authority']['sale_management_flag'] = authority_row[26]
+        send_data['authority']['sale_management_1_flag'] = authority_row[27]
+        send_data['authority']['sale_management_2_flag'] = authority_row[28]
+        send_data['authority']['sale_management_3_flag'] = authority_row[29]
+        send_data['authority']['system_management_flag'] = authority_row[30]
+        send_data['authority']['system_management_1_flag'] = authority_row[31]
+        send_data['authority']['system_management_2_flag'] = authority_row[32]
+        send_data['authority']['system_management_3_flag'] = authority_row[33]
+        send_data['authority']['system_management_4_flag'] = authority_row[34]
+        send_data['authority']['system_management_5_flag'] = authority_row[35]
+        send_data['authority']['system_management_6_flag'] = authority_row[36]
+        send_data['authority']['user_authority_management_flag'] = authority_row[37]
 
         send_data['token'] = create_access_token(identity = user_id, expires_delta = datetime.timedelta(minutes=15))
 
@@ -130,7 +159,7 @@ def tokenUser(user_id):
             status_code = status.HTTP_401_UNAUTHORIZED
             return flask.make_response(flask.jsonify(send_data), status_code)
         
-        query = f"SELECT community_board_flag, goods_management_flag, consignment_management_flag, move_management_flag, sell_managemant_flag, remain_management_flag, sale_management_flag, system_management_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
+        query = f"SELECT community_board_flag, community_board_1_flag, community_board_2_flag, goods_management_flag, goods_management_1_flag, goods_management_2_flag, goods_management_3_flag, consignment_management_flag, consignment_management_1_flag, consignment_management_2_flag, consignment_management_3_flag, move_management_flag, move_management_1_flag, move_management_2_flag, move_management_3_flag, move_management_4_flag, sell_management_flag, sell_management_1_flag, sell_management_2_flag, remain_management_flag, remain_management_1_flag, remain_management_2_flag, remain_management_3_flag, remain_management_4_flag, remain_management_5_flag, remain_management_6_flag, sale_management_flag, sale_management_1_flag, sale_management_2_flag, sale_management_3_flag, system_management_flag, system_management_1_flag, system_management_2_flag, system_management_3_flag, system_management_4_flag, system_management_5_flag, system_management_6_flag, user_authority_management_flag FROM user_authority WHERE user_id = '{user_id}';"
         mysql_cursor.execute(query)
         authority_row = mysql_cursor.fetchone()
         if not authority_row:
@@ -141,14 +170,43 @@ def tokenUser(user_id):
         send_data['userId'] = user_id
         send_data['authority'] = dict()
         send_data['authority']['community_board_flag'] = authority_row[0]
-        send_data['authority']['goods_management_flag'] = authority_row[1]
-        send_data['authority']['consignment_management_flag'] = authority_row[2]
-        send_data['authority']['move_management_flag'] = authority_row[3]
-        send_data['authority']['sell_managemant_flag'] = authority_row[4]
-        send_data['authority']['remain_management_flag'] = authority_row[5]
-        send_data['authority']['sale_management_flag'] = authority_row[6]
-        send_data['authority']['system_management_flag'] = authority_row[7]
-        send_data['authority']['user_authority_management_flag'] = authority_row[8]
+        send_data['authority']['community_board_1_flag'] = authority_row[1]
+        send_data['authority']['community_board_2_flag'] = authority_row[2]
+        send_data['authority']['goods_management_flag'] = authority_row[3]
+        send_data['authority']['goods_management_1_flag'] = authority_row[4]
+        send_data['authority']['goods_management_2_flag'] = authority_row[5]
+        send_data['authority']['goods_management_3_flag'] = authority_row[6]
+        send_data['authority']['consignment_management_flag'] = authority_row[7]
+        send_data['authority']['consignment_management_1_flag'] = authority_row[8]
+        send_data['authority']['consignment_management_2_flag'] = authority_row[9]
+        send_data['authority']['consignment_management_3_flag'] = authority_row[10]
+        send_data['authority']['move_management_flag'] = authority_row[11]
+        send_data['authority']['move_management_1_flag'] = authority_row[12]
+        send_data['authority']['move_management_2_flag'] = authority_row[13]
+        send_data['authority']['move_management_3_flag'] = authority_row[14]
+        send_data['authority']['move_management_4_flag'] = authority_row[15]
+        send_data['authority']['sell_management_flag'] = authority_row[16]
+        send_data['authority']['sell_management_1_flag'] = authority_row[17]
+        send_data['authority']['sell_management_2_flag'] = authority_row[18]
+        send_data['authority']['remain_management_flag'] = authority_row[19]
+        send_data['authority']['remain_management_1_flag'] = authority_row[20]
+        send_data['authority']['remain_management_2_flag'] = authority_row[21]
+        send_data['authority']['remain_management_3_flag'] = authority_row[22]
+        send_data['authority']['remain_management_4_flag'] = authority_row[23]
+        send_data['authority']['remain_management_5_flag'] = authority_row[24]
+        send_data['authority']['remain_management_6_flag'] = authority_row[25]
+        send_data['authority']['sale_management_flag'] = authority_row[26]
+        send_data['authority']['sale_management_1_flag'] = authority_row[27]
+        send_data['authority']['sale_management_2_flag'] = authority_row[28]
+        send_data['authority']['sale_management_3_flag'] = authority_row[29]
+        send_data['authority']['system_management_flag'] = authority_row[30]
+        send_data['authority']['system_management_1_flag'] = authority_row[31]
+        send_data['authority']['system_management_2_flag'] = authority_row[32]
+        send_data['authority']['system_management_3_flag'] = authority_row[33]
+        send_data['authority']['system_management_4_flag'] = authority_row[34]
+        send_data['authority']['system_management_5_flag'] = authority_row[35]
+        send_data['authority']['system_management_6_flag'] = authority_row[36]
+        send_data['authority']['user_authority_management_flag'] = authority_row[37]
 
     except Exception as e:
         send_data = {"result": f"Error : {e}"}

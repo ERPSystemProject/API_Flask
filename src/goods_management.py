@@ -8,12 +8,14 @@ import yaml
 import os
 import shutil
 import traceback
+import math
 
 import flask
 from flask import request
 from flask_api import status
 
 import pymysql
+import pandas as pd
 
 logWriter = None
 db_config = None
@@ -50,7 +52,216 @@ def load_config():
         result['message'] = 'Config Load Error.'
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return result, status_code
-    
+
+def isNaN(data):
+    return data != data
+
+#엑셀
+@app.route('/excel', methods=['GET','POST'])
+def goodsExcelList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    if flask.request.method == 'GET':
+        try:
+            send_data = {"excel": "http://52.79.206.187:19999/example/wizzes-erp-상품등록.xlsx"}
+        except Exception as e:
+            send_data = {"result": f"Error : {e}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
+    elif flask.request.method == 'POST':
+        try:
+            params = request.args.to_dict()
+            user_id = params['userId']
+            files = flask.request.files.getlist("files")
+            if len(files) == 0:
+                send_data = {"result": f"엑셀 파일이 없습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
+            for f in files:
+                data = pd.read_excel(f)
+                stocking_dates          = data['입고일']
+                import_dates            = data['수입일']
+                supplier_tags           = data['공급처 TAG']
+                office_tags             = data['영업소 TAG']
+                brand_tags              = data['브랜드 TAG']
+                category_tags           = data['상품종류 TAG']
+                part_numbers            = data['품번']
+                goods_tags              = data['Tag_no']
+                origins                 = data['원산지']
+                sexs                    = data['성별 Code (0: 공용, 1: 남성, 2:여성)']
+                colors                  = data['색상']
+                sizes                   = data['사이즈']
+                materials               = data['소재']
+                seasons                 = data['시즌']
+                bl_numbers              = data['BL 번호']
+                memos                   = data['메모']
+                costs                   = data['COST']
+                regular_costs           = data['정상판매가']
+                sale_costs              = data['판매가']
+                event_costs             = data['행사 판매가']
+                discount_costs          = data['특별 할인가']
+                management_costs        = data['관리원가']
+                management_cost_rates   = data['관리원가율']
+                department_store_costs  = data['백화점 판매가']
+                outlet_costs            = data['아울렛 판매가']
+                first_costs             = data['원가']
+                
+                query_list = list()
+
+                for index, goods_tag in enumerate(goods_tags):
+                    if isNaN(stocking_dates[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 입고일을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(import_dates[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 수입일을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(supplier_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 공급처 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM supplier WHERE supplier_tag = {supplier_tags[index]};"
+                    mysql_cursor.execute(check_query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 공급처 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(office_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 영업소 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM office WHERE office_tag = {office_tags[index]};"
+                    mysql_cursor.execute(check_query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 영업소 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(brand_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 브랜드 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM brand WHERE brand_tag = '{brand_tags[index]}';"
+                    mysql_cursor.execute(check_query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 브랜드 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(category_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 상품종류 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM category WHERE category_tag = '{category_tags[index]}';"
+                    mysql_cursor.execute(check_query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 상품종류 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(part_numbers[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 품번을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(goods_tags[index]):
+                        index_string = format(index+1, '03')
+                        goods_tags[index] = f"{index_string}{brand_tags[index]}{stocking_dates[index].replace('-','')}{category_tags[index]}{supplier_tags[index]}"
+                    check_query = f"SELECT count(*) FROM goods WHERE goods_tag = '{goods_tags[index]}';"
+                    mysql_cursor.execute(check_query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] != 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 상품 Tag_no는 이미 존재하는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(origins[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 원산지를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(sexs[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 성별을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if sexs[index] < 0 or sexs[index] > 2:
+                        send_data = {"result": f"{index+1} 번째 데이터에 성별을 입력을 확인해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(colors[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 색상을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(sizes[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 사이즈를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(materials[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 소재를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(seasons[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 시즌을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(bl_numbers[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 BL 번호를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(memos[index]):
+                        memo[index] = ""
+                    if isNaN(costs[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 COST를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(regular_costs[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 정상판매가를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(sale_costs[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 판매가를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(first_costs[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 원가를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(management_costs[index]) and isNaN(management_cost_rates[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 관리원가나 관리원가율을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    elif isNaN(management_costs[index]):
+                        management_costs[index] = first_costs[index] * management_cost_rates[index] / 100
+                    elif isNaN(management_cost_rates[index]):
+                        management_cost_rates[index] = management_costs[index] / first_costs[index] * 100
+                    if isNaN(event_costs[index]):
+                        event_costs[index] = sale_costs[index]
+                    if isNaN(discount_costs[index]):
+                        discount_costs[index] = sale_costs[index]
+                    if isNaN(department_store_costs[index]):
+                        department_store_costs[index] = sale_costs[index]
+                    if isNaN(outlet_costs[index]):
+                        outlet_costs[index] = sale_costs[index]
+                    
+                    query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
+                    query += f" VALUES ('{goods_tags[index]}',0,'{part_numbers[index]}','{bl_numbers[index]}','{origins[index]}','{brand_tags[index]}','{category_tags[index]}',{office_tags[index]}, {supplier_tags[index]}, '{colors[index]}', '{seasons[index]}', {sexs[index]}, '{sizes[index]}', '{materials[index]}', '{memos[index]}', 4, '{str(stocking_dates[index]).split(' ')[0]}', '{str(import_dates[index]).split(' ')[0]}', {first_costs[index]}, {costs[index]}, {regular_costs[index]}, {sale_costs[index]}, {event_costs[index]}, {discount_costs[index]}, {management_costs[index]}, {management_cost_rates[index]}, {department_store_costs[index]}, {outlet_costs[index]}, '{user_id}', CURRENT_TIMESTAMP);"
+                    query_list.append(query)
+                
+                for query in query_list:
+                    mysql_cursor.execute(query)
+                    send_data = {"result": f"SUCCESS"}
+        except Exception as e:
+            print(traceback.format_exc())
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
 #상품 리스트 조회
 @app.route('/', methods=['GET'])
 def getGoodsList():

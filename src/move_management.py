@@ -50,6 +50,128 @@ def load_config():
         result['message'] = 'Config Load Error.'
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return result, status_code
+
+#엑셀
+@app.route('/excel', methods=['GET','POST'])
+def moveExcelList():
+    send_data = dict()
+    status_code = status.HTTP_200_OK
+    mysql_cursor, connect_code = connect_mysql()
+    if not connect_code == status.HTTP_200_OK:
+        return flask.make_response(flask.jsonify(mysql_cursor), connect_code)
+
+    if flask.request.method == 'GET':
+        try:
+            send_data = {"excel": "http://52.79.206.187:19999/example/wizzes-erp-출고요청.xlsx"}
+        except Exception as e:
+            send_data = {"result": f"Error : {e}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
+
+    elif flask.request.method == 'POST':
+        try:
+            params = request.args.to_dict()
+            user_id = params['userId']
+            files = flask.request.files.getlist("files")
+            if len(files) == 0:
+                send_data = {"result": f"엑셀 파일이 없습니다."}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
+            for f in files:
+                data = pd.read_excel(f)
+                from_office_tags    = data['출발 영업소 TAG']
+                to_office_tags      = data['도착 영업소 TAG']
+                goods_tags          = data['Tag_no']
+                export_dates        = data['출고일']
+                memos               = data['메모']
+                approver_users      = data['출고 승인자 이름']
+                move_users          = data['출고 처리자 이름']
+                
+                query_list = list()
+
+                for index, goods_tag in enumerate(goods_tags):
+                    if isNaN(from_office_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업소 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM office WHERE office_tag = {from_office_tags[index]};"
+                    mysql_cursor.execute(query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업소 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(to_office_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업소 TAG를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM office WHERE office_tag = {to_office_tags[index]};"
+                    mysql_cursor.execute(query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업소 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(goods_tags[index]):
+                        send_data = {"result": f"{index+1} 번째 데이터에 Tag_no를 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    check_query = f"SELECT count(*) FROM goods WHERE goods_tag = '{goods_tags[index]}';"
+                    mysql_cursor.execute(query)
+                    check_row = mysql_cursor.fetchone()
+                    if check_row[0] == 0:
+                        send_data = {"result": f"{index+1} 번째 데이터에 Tag_no는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(export_dates[index]):
+                        send_data = {"result": f"{index} 번째 데이터에 출고일을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(memos[index]):
+                        memos[index] = ''
+                    if isNaN(approver_users[index]):
+                        send_data = {"result": f"{index} 번째 데이터에 출고 승인자 이름을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if isNaN(move_users[index]):
+                        send_data = {"result": f"{index} 번째 데이터에 출고 처리자 이름을 입력해주세요."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+
+                    query1 = f"DELETE FROM goods_movement WHERE goods_tag = '{goods_tags[index]}';"
+                    query_list.append(query1)
+
+                    query2 = f"INSERT INTO goods_movement (goods_tag, from_office_tag, to_office_tag, export_date, status, description, move_user, approver_user, user_id, register_type, register_date) "
+                    query2 += f"VALUES ('{goods_tags[index]}', {from_office_tags[index]}, {to_office_tags[index]}, '{str(export_dates[index]).split(' ')[0]}', 0, '{memos[index]}', '{move_users[index]}', '{approver_users[index]}', '{user_id}', 1, CURRENT_TIMESTAMP);"
+                    query_list.append(query2)
+                
+                    query3 = f"select MAX(goods_history_index) FROM goods_history WHERE goods_tag = '{goods_tags[index]}';"
+                    mysql_cursor.execute(query3)
+                    index_row = mysql_cursor.fetchone()
+                    if not index_row:
+                        h_index = 1
+                    elif not index_row[0]:
+                        h_index = 1
+                    else:
+                        h_index = index_row[0] + 1
+
+                    query4 = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date) "
+                    query4 += f"VALUES ('{goods_tags[index]}',{h_index},'출고요청',12,1,'{user_id}',CURRENT_TIMESTAMP);"
+                    query_list.append(query4)
+
+                    query5 = f"UPDATE goods SET goods.status = 12 WHERE goods_tag = '{goods_tags[index]}';"
+                    query_list.append(query5)
+
+                
+                for query in query_list:
+                    mysql_cursor.execute(query)
+                    send_data = {"result": f"SUCCESS"}
+        except Exception as e:
+            send_data = {"result": f"Error : {e}"}
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        finally:
+            return flask.make_response(flask.jsonify(send_data), status_code)
     
 # 상품 리스트 조회 및 출고 요청
 @app.route('/', methods=['GET','POST'])
@@ -457,11 +579,15 @@ def approveList():
                     status_code = status.HTTP_400_BAD_REQUEST
                     return flask.make_response(flask.jsonify(send_data), status_code)
                 if dateType == 0:
-                    dateString = 'stocking_date'
+                    dateString = 'goods_movement.export_date'
                 elif dateType == 1:
+                    dateString = 'goods_movement.register_date'
+                elif dateType == 2:
+                    dateString = 'stocking_date'
+                elif dateType == 3:
                     dateString = 'import_date'
                 else:
-                    dateString = 'register_date'
+                    dateString = 'goods.register_date'
                 if 'startDate' in params:
                     startDate = params['startDate']
                     if condition_query:
