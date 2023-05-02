@@ -14,6 +14,7 @@ from flask import request
 from flask_api import status
 
 import pymysql
+import pandas as pd
 
 logWriter = None
 db_config = None
@@ -50,6 +51,9 @@ def load_config():
         result['message'] = 'Config Load Error.'
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return result, status_code
+
+def isNaN(data):
+    return data != data
 
 #엑셀
 @app.route('/excel', methods=['GET','POST'])
@@ -96,7 +100,7 @@ def moveExcelList():
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM office WHERE office_tag = {from_office_tags[index]};"
-                    mysql_cursor.execute(query)
+                    mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
                         send_data = {"result": f"{index+1} 번째 데이터에 출발 영업소 TAG는 존재하지 않는 값입니다."}
@@ -107,7 +111,7 @@ def moveExcelList():
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM office WHERE office_tag = {to_office_tags[index]};"
-                    mysql_cursor.execute(query)
+                    mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
                         send_data = {"result": f"{index+1} 번째 데이터에 도착 영업소 TAG는 존재하지 않는 값입니다."}
@@ -118,7 +122,7 @@ def moveExcelList():
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM goods WHERE goods_tag = '{goods_tags[index]}';"
-                    mysql_cursor.execute(query)
+                    mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
                         send_data = {"result": f"{index+1} 번째 데이터에 Tag_no는 존재하지 않는 값입니다."}
