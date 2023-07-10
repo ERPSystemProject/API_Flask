@@ -942,12 +942,12 @@ def officeApis():
         status_code = status.HTTP_200_OK
         try:
             params = request.args.to_dict()
-            condition_query = " WHERE office_tag > 1"
+            condition_query = ""
             
             if 'type' in params:
                 officeType = int(params['type'])
                 if officeType < 0 or officeType > 7:
-                    send_data = {"result": "영업소 판매 유형 값이 올바르지 않습니다."}
+                    send_data = {"result": "영업처 판매 유형 값이 올바르지 않습니다."}
                     status_code = status.HTTP_400_BAD_REQUEST
                     return flask.make_response(flask.jsonify(send_data), status_code)
                 if officeType != 0:
@@ -1165,7 +1165,7 @@ def officetDetailApis(officeTag):
     mysql_cursor.execute(query)
     office_row = mysql_cursor.fetchone()
     if not office_row:
-        send_data = {"result": "해당 영업소 Tag는 존재하지 않습니다."}
+        send_data = {"result": "해당 처 Tag는 존재하지 않습니다."}
         status_code = status.HTTP_404_NOT_FOUND
         return flask.make_response(flask.jsonify(send_data), status_code)
 

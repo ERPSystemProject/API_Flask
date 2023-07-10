@@ -78,14 +78,19 @@ def moveExcelList():
             params = request.args.to_dict()
             user_id = params['userId']
             files = flask.request.files.getlist("files")
+            query = f"SELECT authority_id, office_tag FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            a_id_row = mysql_cursor.fetchone()
+            a_id = a_id_row[0]
+            user_office = a_id_row[1]
             if len(files) == 0:
                 send_data = {"result": f"엑셀 파일이 없습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
             for f in files:
                 data = pd.read_excel(f)
-                from_office_tags    = data['출발 영업소 TAG']
-                to_office_tags      = data['도착 영업소 TAG']
+                from_office_tags    = data['출발 영업처 TAG']
+                to_office_tags      = data['도착 영업처 TAG']
                 goods_tags          = data['Tag_no']
                 export_dates        = data['출고일']
                 memos               = data['메모']
@@ -96,25 +101,29 @@ def moveExcelList():
 
                 for index, goods_tag in enumerate(goods_tags):
                     if isNaN(from_office_tags[index]):
-                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업소 TAG를 입력해주세요."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업처 TAG를 입력해주세요."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM office WHERE office_tag = {from_office_tags[index]};"
                     mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
-                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업소 TAG는 존재하지 않는 값입니다."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업처 TAG는 존재하지 않는 값입니다."}
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if a_id == 'manager' and user_office != from_office_tags[index]:
+                        send_data = {"result": f"{index+1} 번째 데이터에 출발 영업처 TAG는 권한이 없습니다."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     if isNaN(to_office_tags[index]):
-                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업소 TAG를 입력해주세요."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업처 TAG를 입력해주세요."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM office WHERE office_tag = {to_office_tags[index]};"
                     mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
-                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업소 TAG는 존재하지 않는 값입니다."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 도착 영업처 TAG는 존재하지 않는 값입니다."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     if isNaN(goods_tags[index]):
@@ -189,6 +198,12 @@ def moveList():
     if flask.request.method == 'GET':
         try:
             params = request.args.to_dict()
+            user_id = params['userId']
+            query = f"SELECT authority_id, office_tag FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            user_row = mysql_cursor.fetchone()
+            a_id = user_row[0]
+            user_office = user_row[1]
             if not 'limit' in params:
                 send_data = {"result": "한 페이지당 몇개의 게시물을 표시할지 지정하지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -203,7 +218,10 @@ def moveList():
             start = (int(page)-1) * int(limit)
 
             limit_query = f" limit {start}, {limit};"
-            condition_query = " WHERE goods.status = 4"
+            if a_id == 'manager':
+                condition_query = f" WHERE goods.status = 4 and goods.office_tag = {user_office}"
+            else:
+                condition_query = " WHERE goods.status = 4"
 
             if 'dateType' in params:
                 dateType = int(params['dateType'])
@@ -373,7 +391,7 @@ def moveList():
             goods_rows = mysql_cursor.fetchall()
 
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','영업소','COST','원가','정상판매가','판매가','특별할인가']
+            send_data['table']['column'] = ['검색 번호','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','영업처','COST','원가','정상판매가','판매가','특별할인가']
             send_data['table']['rows'] = list()
 
             for index, goods_row in enumerate(goods_rows):
@@ -560,6 +578,12 @@ def approveList():
     if flask.request.method == 'GET':
         try:
             params = request.args.to_dict()
+            user_id = params['userId']
+            query = f"SELECT authority_id, office_tag FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            user_row = mysql_cursor.fetchone()
+            a_id = user_row[0]
+            user_office = user_row[1]
             if not 'limit' in params:
                 send_data = {"result": "한 페이지당 몇개의 게시물을 표시할지 지정하지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -574,7 +598,10 @@ def approveList():
             start = (int(page)-1) * int(limit)
 
             limit_query = f" limit {start}, {limit};"
-            condition_query = " WHERE goods.goods_tag = goods_movement.goods_tag and goods.status = 12"
+            if a_id == 'manager':
+                condition_query = f" WHERE goods.goods_tag = goods_movement.goods_tag and goods.status = 12 and goods_movement.to_office_tag = {user_office}"
+            else:
+                condition_query = " WHERE goods.goods_tag = goods_movement.goods_tag and goods.status = 12"
 
             if 'dateType' in params:
                 dateType = int(params['dateType'])
@@ -779,7 +806,7 @@ def approveList():
             goods_rows = mysql_cursor.fetchall()
 
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','출고일','출발 영업소','도착 영업소','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','입력방식','출고자','승인자','메모','cost','원가','정상판매가','판매가','특별할인가']
+            send_data['table']['column'] = ['검색 번호','출고일','출발 영업처','도착 영업처','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','입력방식','출고자','승인자','메모','cost','원가','정상판매가','판매가','특별할인가']
             send_data['table']['rows'] = list()
 
             for index, goods_row in enumerate(goods_rows):
@@ -1129,7 +1156,7 @@ def statusOfficeList():
             status_rows = mysql_cursor.fetchall()
             
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','출고일','출발 영업소','fromOfficeTag','도착 영업소','toOfficeTag','출고건수','승인건수','미승인건수']
+            send_data['table']['column'] = ['검색 번호','출고일','출발 영업처','fromOfficeTag','도착 영업처','toOfficeTag','출고건수','승인건수','미승인건수']
             send_data['table']['rows'] = list()
 
             for index, status_row in enumerate(status_rows):
@@ -1202,11 +1229,11 @@ def statusOfficeDetailList():
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
             if not 'fromOfficeTag' in params:
-                send_data = {"result": "출발 영업소 tag가 지정하지 않았습니다"}
+                send_data = {"result": "출발 영업처 tag가 지정하지 않았습니다"}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
             if not 'toOfficeTag' in params:
-                send_data = {"result": "도착 영업소 tag가 지정하지 않았습니다"}
+                send_data = {"result": "도착 영업처 tag가 지정하지 않았습니다"}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
             

@@ -124,7 +124,9 @@ class saleApiList(Resource):
         '''
         get goods list for sale
         '''
+        id = get_jwt_identity()
         args = goods_list_query_parser.parse_args()
+        args['userId'] = id
         res = requests.get(f"http://{management_url}", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -158,7 +160,9 @@ class soldApiList(Resource):
         '''
         get sold goods list 
         '''
+        id = get_jwt_identity()
         args = sale_list_query_parser.parse_args()
+        args['userId'] = id
         res = requests.get(f"http://{management_url}/sold", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

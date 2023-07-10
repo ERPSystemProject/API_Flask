@@ -514,7 +514,9 @@ class goodsFirstCostDetailApiList(Resource):
         '''
         adjust management first cost
         '''
+        id = get_jwt_identity()
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
+        request_body['userId'] = id
         res = requests.get(f"http://{management_url}/firstCost/{supplierTag}/{stockingDate}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

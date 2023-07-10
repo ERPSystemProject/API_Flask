@@ -77,6 +77,10 @@ def consignmetExcelList():
             params = request.args.to_dict()
             user_id = params['userId']
             files = flask.request.files.getlist("files")
+            query = f"SELECT authority_id FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            a_id_row = mysql_cursor.fetchone()
+            a_id = a_id_row[0]
             if len(files) == 0:
                 send_data = {"result": f"엑셀 파일이 없습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -86,7 +90,7 @@ def consignmetExcelList():
                 stocking_dates          = data['입고일']
                 import_dates            = data['수입일']
                 supplier_tags           = data['공급처 TAG']
-                office_tags             = data['영업소 TAG']
+                office_tags             = data['영업처 TAG']
                 brand_tags              = data['브랜드 TAG']
                 category_tags           = data['상품종류 TAG']
                 part_numbers            = data['품번']
@@ -133,14 +137,14 @@ def consignmetExcelList():
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     if isNaN(office_tags[index]):
-                        send_data = {"result": f"{index+1} 번째 데이터에 영업소 TAG를 입력해주세요."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 영업처 TAG를 입력해주세요."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     check_query = f"SELECT count(*) FROM office WHERE office_tag = {office_tags[index]};"
                     mysql_cursor.execute(check_query)
                     check_row = mysql_cursor.fetchone()
                     if check_row[0] == 0:
-                        send_data = {"result": f"{index+1} 번째 데이터에 영업소 TAG는 존재하지 않는 값입니다."}
+                        send_data = {"result": f"{index+1} 번째 데이터에 영업처 TAG는 존재하지 않는 값입니다."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
                     if isNaN(brand_tags[index]):
@@ -225,10 +229,11 @@ def consignmetExcelList():
                         send_data = {"result": f"{index+1} 번째 데이터에 판매가를 입력해주세요."}
                         status_code = status.HTTP_400_BAD_REQUEST
                         return flask.make_response(flask.jsonify(send_data), status_code)
-                    if isNaN(first_costs[index]):
-                        send_data = {"result": f"{index+1} 번째 데이터에 원가를 입력해주세요."}
-                        status_code = status.HTTP_400_BAD_REQUEST
-                        return flask.make_response(flask.jsonify(send_data), status_code)
+                    if a_id == 'admin':
+                        if isNaN(first_costs[index]):
+                            send_data = {"result": f"{index+1} 번째 데이터에 원가를 입력해주세요."}
+                            status_code = status.HTTP_400_BAD_REQUEST
+                            return flask.make_response(flask.jsonify(send_data), status_code)
                     if isNaN(management_costs[index]) and isNaN(management_cost_rates[index]):
                         send_data = {"result": f"{index+1} 번째 데이터에 관리원가나 관리원가율을 입력해주세요."}
                         status_code = status.HTTP_400_BAD_REQUEST
@@ -246,9 +251,17 @@ def consignmetExcelList():
                     if isNaN(outlet_costs[index]):
                         outlet_costs[index] = sale_costs[index]
                     
-                    query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
-                    query += f" VALUES ('{goods_tags[index]}',1,'{part_numbers[index]}','{bl_numbers[index]}','{origins[index]}','{brand_tags[index]}','{category_tags[index]}',{office_tags[index]}, {supplier_tags[index]}, '{colors[index]}', '{seasons[index]}', {sexs[index]}, '{sizes[index]}', '{materials[index]}', '{memos[index]}', 4, '{str(stocking_dates[index]).split(' ')[0]}', '{str(import_dates[index]).split(' ')[0]}', {first_costs[index]}, {costs[index]}, {regular_costs[index]}, {sale_costs[index]}, {event_costs[index]}, {discount_costs[index]}, {management_costs[index]}, {management_cost_rates[index]}, {department_store_costs[index]}, {outlet_costs[index]}, '{user_id}', CURRENT_TIMESTAMP);"
-                    query_list.append(query)
+                    if a_id == 'admin':
+                        query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
+                        query += f" VALUES ('{goods_tags[index]}',1,'{part_numbers[index]}','{bl_numbers[index]}','{origins[index]}','{brand_tags[index]}','{category_tags[index]}',{office_tags[index]}, {supplier_tags[index]}, '{colors[index]}', '{seasons[index]}', {sexs[index]}, '{sizes[index]}', '{materials[index]}', '{memos[index]}', 4, '{str(stocking_dates[index]).split(' ')[0]}', '{str(import_dates[index]).split(' ')[0]}', {first_costs[index]}, {costs[index]}, {regular_costs[index]}, {sale_costs[index]}, {event_costs[index]}, {discount_costs[index]}, {management_costs[index]}, {management_cost_rates[index]}, {department_store_costs[index]}, {outlet_costs[index]}, '{user_id}', CURRENT_TIMESTAMP);"
+                        query_list.append(query)
+                    else:
+                        query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
+                        query += f" VALUES ('{goods_tags[index]}',1,'{part_numbers[index]}','{bl_numbers[index]}','{origins[index]}','{brand_tags[index]}','{category_tags[index]}',{office_tags[index]}, {supplier_tags[index]}, '{colors[index]}', '{seasons[index]}', {sexs[index]}, '{sizes[index]}', '{materials[index]}', '{memos[index]}', 4, '{str(stocking_dates[index]).split(' ')[0]}', '{str(import_dates[index]).split(' ')[0]}', 0, {costs[index]}, {regular_costs[index]}, {sale_costs[index]}, {event_costs[index]}, {discount_costs[index]}, {management_costs[index]}, {management_cost_rates[index]}, {department_store_costs[index]}, {outlet_costs[index]}, '{user_id}', CURRENT_TIMESTAMP);"
+                        query_list.append(query)
+                    
+                    history_query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goods_tags[index]}', 1, '물품등록', 4, '{user_id}', CURRENT_TIMESTAMP);"
+                    query_list.append(history_query)
                 
                 for query in query_list:
                     mysql_cursor.execute(query)
@@ -976,19 +989,31 @@ def consignmentDetailAPIList(goodsTag):
                 send_data = {"result": "아울렛판매가가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            if not 'firstCost' in request_body:
-                send_data = {"result": "원가가 입력되지 않았습니다."}
-                status_code = status.HTTP_400_BAD_REQUEST
-                return flask.make_response(flask.jsonify(send_data), status_code)
             if not 'userId' in request_body:
                 send_data = {"result": "사용자가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            
-            query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
-            query += f"VALUES ('{goodsTag}', 1, '{request_body['partNumber']}', '{request_body['blNumber']}', '{request_body['origin']}', '{request_body['brandTag']}', '{request_body['categoryTag']}', {request_body['officeTag']}, {request_body['supplierTag']}, '{request_body['color']}', '{request_body['season']}', {request_body['sexTag']}, '{request_body['size']}', "
-            query += f"'{request_body['material']}', '{request_body['description']}', 4, '{request_body['stockingDate']}', '{request_body['importDate']}', {request_body['firstCost']}, {request_body['cost']}, {request_body['regularCost']}, {request_body['saleCost']}, {request_body['eventCost']}, {request_body['discountCost']}, {request_body['managementCost']}, {request_body['managementCostRate']}, {request_body['departmentStoreCost']}, {request_body['outletCost']}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+            user_id = request_body['userId']
+            query = f"SELECT authority_id FROM user where user_id = '{user_id}';"
             mysql_cursor.execute(query)
+            a_id_row = mysql_cursor.fetchone()
+            a_id = a_id_row[0]
+            if a_id == 'admin':
+                if not 'firstCost' in request_body:
+                    send_data = {"result": "원가가 입력되지 않았습니다."}
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    return flask.make_response(flask.jsonify(send_data), status_code)
+            
+            if a_id == 'admin':
+                query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
+                query += f"VALUES ('{goodsTag}', 1, '{request_body['partNumber']}', '{request_body['blNumber']}', '{request_body['origin']}', '{request_body['brandTag']}', '{request_body['categoryTag']}', {request_body['officeTag']}, {request_body['supplierTag']}, '{request_body['color']}', '{request_body['season']}', {request_body['sexTag']}, '{request_body['size']}', "
+                query += f"'{request_body['material']}', '{request_body['description']}', 4, '{request_body['stockingDate']}', '{request_body['importDate']}', {request_body['firstCost']}, {request_body['cost']}, {request_body['regularCost']}, {request_body['saleCost']}, {request_body['eventCost']}, {request_body['discountCost']}, {request_body['managementCost']}, {request_body['managementCostRate']}, {request_body['departmentStoreCost']}, {request_body['outletCost']}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+                mysql_cursor.execute(query)
+            else:
+                query = f"INSERT INTO goods(goods_tag, consignment_flag, part_number, bl_number, origin_name, brand_tag, category_tag, office_tag, supplier_tag, color, season, sex, size, material, description, status, stocking_date, import_date, first_cost, cost, regular_cost, sale_cost, event_cost, discount_cost, management_cost, management_cost_rate, department_store_cost, outlet_cost, user_id, register_date)"
+                query += f"VALUES ('{goodsTag}', 1, '{request_body['partNumber']}', '{request_body['blNumber']}', '{request_body['origin']}', '{request_body['brandTag']}', '{request_body['categoryTag']}', {request_body['officeTag']}, {request_body['supplierTag']}, '{request_body['color']}', '{request_body['season']}', {request_body['sexTag']}, '{request_body['size']}', "
+                query += f"'{request_body['material']}', '{request_body['description']}', 4, '{request_body['stockingDate']}', '{request_body['importDate']}', 0, {request_body['cost']}, {request_body['regularCost']}, {request_body['saleCost']}, {request_body['eventCost']}, {request_body['discountCost']}, {request_body['managementCost']}, {request_body['managementCostRate']}, {request_body['departmentStoreCost']}, {request_body['outletCost']}, '{request_body['userId']}', CURRENT_TIMESTAMP);"
+                mysql_cursor.execute(query)
 
             query = f"INSERT INTO goods_history (goods_tag, goods_history_index, name, status, user_id, update_date) VALUES ('{goodsTag}', 1, '물품등록', 4, '{request_body['userId']}', CURRENT_TIMESTAMP);"
             mysql_cursor.execute(query)
@@ -1118,14 +1143,20 @@ def consignmentDetailAPIList(goodsTag):
                 send_data = {"result": "아울렛판매가가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
-            if not 'firstCost' in request_body:
-                send_data = {"result": "원가가 입력되지 않았습니다."}
-                status_code = status.HTTP_400_BAD_REQUEST
-                return flask.make_response(flask.jsonify(send_data), status_code)
             if not 'userId' in request_body:
                 send_data = {"result": "사용자가 입력되지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
                 return flask.make_response(flask.jsonify(send_data), status_code)
+            user_id = request_body['userId']
+            query = f"SELECT authority_id FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            a_id_row = mysql_cursor.fetchone()
+            a_id = a_id_row[0]
+            if a_id == 'admin':
+                if not 'firstCost' in request_body:
+                    send_data = {"result": "원가가 입력되지 않았습니다."}
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    return flask.make_response(flask.jsonify(send_data), status_code)
             if goodsTag != request_body['goodsTag']:
                 query = f"SELECT * FROM goods WHERE goods_tag = '{request_body['goodsTag']}';"
                 mysql_cursor.execute(query)
@@ -1135,36 +1166,68 @@ def consignmentDetailAPIList(goodsTag):
                     status_code = status.HTTP_404_NOT_FOUND
                     return flask.make_response(flask.jsonify(send_data), status_code)
             
-            query = f"UPDATE goods SET goods_tag = '{request_body['goodsTag']}',"
-            query += f"part_number = '{request_body['partNumber']}', "
-            query += f"bl_number = '{request_body['blNumber']}', "
-            query += f"origin_name = '{request_body['origin']}', "
-            query += f"brand_tag = '{request_body['brandTag']}', "
-            query += f"category_tag = '{request_body['categoryTag']}', "
-            query += f"office_tag = {request_body['officeTag']}, "
-            query += f"supplier_tag = {request_body['supplierTag']}, "
-            query += f"color = '{request_body['color']}', "
-            query += f"season = '{request_body['season']}', "
-            query += f"sex = {request_body['sexTag']}, "
-            query += f"size = '{request_body['size']}', "
-            query += f"material = '{request_body['material']}', "
-            query += f"description = '{request_body['description']}', "
-            query += f"stocking_date = '{request_body['stockingDate']}', "
-            query += f"import_date = '{request_body['importDate']}', "
-            query += f"first_cost = {request_body['firstCost']}, "
-            query += f"cost = {request_body['cost']}, "
-            query += f"regular_cost = {request_body['regularCost']}, "
-            query += f"sale_cost = {request_body['saleCost']}, "
-            query += f"event_cost = {request_body['eventCost']}, "
-            query += f"discount_cost = {request_body['discountCost']}, "
-            query += f"management_cost = {request_body['managementCost']}, "
-            query += f"management_cost_rate = {request_body['managementCostRate']}, "
-            query += f"department_store_cost = {request_body['departmentStoreCost']}, "
-            query += f"outlet_cost = {request_body['outletCost']}, "
-            query += f"user_id = '{request_body['userId']}', "
-            query += f"register_date = CURRENT_TIMESTAMP "
-            query += f"WHERE goods_tag = '{goodsTag}';"
-            mysql_cursor.execute(query)
+            if a_id == 'admin':
+                query = f"UPDATE goods SET goods_tag = '{request_body['goodsTag']}',"
+                query += f"part_number = '{request_body['partNumber']}', "
+                query += f"bl_number = '{request_body['blNumber']}', "
+                query += f"origin_name = '{request_body['origin']}', "
+                query += f"brand_tag = '{request_body['brandTag']}', "
+                query += f"category_tag = '{request_body['categoryTag']}', "
+                query += f"office_tag = {request_body['officeTag']}, "
+                query += f"supplier_tag = {request_body['supplierTag']}, "
+                query += f"color = '{request_body['color']}', "
+                query += f"season = '{request_body['season']}', "
+                query += f"sex = {request_body['sexTag']}, "
+                query += f"size = '{request_body['size']}', "
+                query += f"material = '{request_body['material']}', "
+                query += f"description = '{request_body['description']}', "
+                query += f"stocking_date = '{request_body['stockingDate']}', "
+                query += f"import_date = '{request_body['importDate']}', "
+                query += f"first_cost = {request_body['firstCost']}, "
+                query += f"cost = {request_body['cost']}, "
+                query += f"regular_cost = {request_body['regularCost']}, "
+                query += f"sale_cost = {request_body['saleCost']}, "
+                query += f"event_cost = {request_body['eventCost']}, "
+                query += f"discount_cost = {request_body['discountCost']}, "
+                query += f"management_cost = {request_body['managementCost']}, "
+                query += f"management_cost_rate = {request_body['managementCostRate']}, "
+                query += f"department_store_cost = {request_body['departmentStoreCost']}, "
+                query += f"outlet_cost = {request_body['outletCost']}, "
+                query += f"user_id = '{request_body['userId']}', "
+                query += f"register_date = CURRENT_TIMESTAMP "
+                query += f"WHERE goods_tag = '{goodsTag}';"
+                mysql_cursor.execute(query)
+            else:
+                query = f"UPDATE goods SET goods_tag = '{request_body['goodsTag']}',"
+                query += f"part_number = '{request_body['partNumber']}', "
+                query += f"bl_number = '{request_body['blNumber']}', "
+                query += f"origin_name = '{request_body['origin']}', "
+                query += f"brand_tag = '{request_body['brandTag']}', "
+                query += f"category_tag = '{request_body['categoryTag']}', "
+                query += f"office_tag = {request_body['officeTag']}, "
+                query += f"supplier_tag = {request_body['supplierTag']}, "
+                query += f"color = '{request_body['color']}', "
+                query += f"season = '{request_body['season']}', "
+                query += f"sex = {request_body['sexTag']}, "
+                query += f"size = '{request_body['size']}', "
+                query += f"material = '{request_body['material']}', "
+                query += f"description = '{request_body['description']}', "
+                query += f"stocking_date = '{request_body['stockingDate']}', "
+                query += f"import_date = '{request_body['importDate']}', "
+                query += f"first_cost = 0, "
+                query += f"cost = {request_body['cost']}, "
+                query += f"regular_cost = {request_body['regularCost']}, "
+                query += f"sale_cost = {request_body['saleCost']}, "
+                query += f"event_cost = {request_body['eventCost']}, "
+                query += f"discount_cost = {request_body['discountCost']}, "
+                query += f"management_cost = {request_body['managementCost']}, "
+                query += f"management_cost_rate = {request_body['managementCostRate']}, "
+                query += f"department_store_cost = {request_body['departmentStoreCost']}, "
+                query += f"outlet_cost = {request_body['outletCost']}, "
+                query += f"user_id = '{request_body['userId']}', "
+                query += f"register_date = CURRENT_TIMESTAMP "
+                query += f"WHERE goods_tag = '{goodsTag}';"
+                mysql_cursor.execute(query)
 
             query = f"SELECT goods.status FROM goods WHERE goods_tag = '{request_body['goodsTag']}';"
             mysql_cursor.execute(query)
@@ -1423,7 +1486,7 @@ def firstCostDetailAPIList(supplierTag):
             
             send_data['totalCount'] = len(goods_rows)
             send_data['table'] = dict()
-            send_data['table']['column'] = ['번호','입고일','수입일','이미지','시즌','태그번호','브랜드','상품종류','성별','색상','소재','사이즈','원산지','공급처유형','공급처','영업소','상품상태','COST','원가','정상 판매가','판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','메모']
+            send_data['table']['column'] = ['번호','입고일','수입일','이미지','시즌','태그번호','브랜드','상품종류','성별','색상','소재','사이즈','원산지','공급처유형','공급처','영업처','상품상태','COST','원가','정상 판매가','판매가','백화점 판매가','행사 판매가','아울렛 판매가','특별 할인가','메모']
             send_data['table']['rows'] = list()
             for index, goods_row in enumerate(goods_rows):
                 data = list()

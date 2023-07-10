@@ -78,7 +78,7 @@ def getOfficeDropBoxList():
             officeList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['name'] = '영업소'
+        send_data['name'] = '영업처'
         send_data['items'] = officeList
 
     except Exception as e:
@@ -114,7 +114,7 @@ def getFromOfficeDropBoxList():
             officeList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['name'] = '출발 영업소'
+        send_data['name'] = '출발 영업처'
         send_data['items'] = officeList
 
     except Exception as e:
@@ -150,7 +150,7 @@ def getToOfficeDropBoxList():
             officeList.append(data)
 
         send_data['result'] = 'SUCCESS'
-        send_data['name'] = '도착 영업소'
+        send_data['name'] = '도착 영업처'
         send_data['items'] = officeList
 
     except Exception as e:

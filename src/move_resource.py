@@ -344,7 +344,9 @@ class moveApiList(Resource):
         '''
         get move list 
         '''
+        id = get_jwt_identity()
         args = move_list_query_parser.parse_args()
+        args['userId'] = id
         res = requests.get(f"http://{management_url}", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code
@@ -412,7 +414,9 @@ class approveApiList(Resource):
         '''
         get waiting move approve list 
         '''
+        id = get_jwt_identity()
         args = move_approve_list_query_parser.parse_args()
+        args['userId'] = id
         res = requests.get(f"http://{management_url}/approve", params=args, timeout=3)
         result = json.loads(res.text)
         return result, res.status_code

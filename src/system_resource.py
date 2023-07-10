@@ -11,6 +11,8 @@ import requests
 import json
 import yaml
 
+import pymysql
+
 system_ns = Namespace('System', version="1.0", title='System API List', description='System API List')
 
 brand_query_parser = reqparse.RequestParser()
@@ -229,6 +231,39 @@ f.close()
 apiconfig = config['system_management']
 
 management_url = apiconfig['ip'] + ':' + str(apiconfig['port'])
+db_config = None
+
+# DB 접속
+def connect_mysql():
+    status_code = status.HTTP_200_OK
+    try:
+        mysql_conn = pymysql.connect(user=db_config['user'], password=db_config['password'],
+                                 host=db_config['host'], port=db_config['port'], database=db_config['database'],
+                                 charset='utf8', autocommit=True)
+        mysql_cursor = mysql_conn.cursor()
+
+        return mysql_cursor, status_code
+    except Exception as e:
+        result = dict()
+        result['message'] = 'DB Connection Error.'
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return result, status_code
+
+#config 파일 읽어오기
+def load_config():
+    global db_config
+    status_code = status.HTTP_200_OK
+    try:
+        f = open(config_path)
+        config = yaml.load(f, Loader=yaml.FullLoader)
+        f.close()
+        db_config = config['DB']['mysql']
+        return config, status_code
+    except Exception as e:
+        result = dict()
+        result['message'] = 'Config Load Error.'
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return result, status_code
 
 @system_ns.route('/brand')
 class brandApiList(Resource):
@@ -254,6 +289,14 @@ class brandApiList(Resource):
         '''
         post brand
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/brand", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -269,6 +312,14 @@ class brandDetailApiList(Resource):
         '''
         adjust brand
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/brand/{brandTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -280,6 +331,14 @@ class brandDetailApiList(Resource):
         '''
         delete brand
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/brand/{brandTag}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
@@ -310,6 +369,14 @@ class categoryApiList(Resource):
         '''
         post category
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/category", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -326,6 +393,14 @@ class categoryDetailApiList(Resource):
         '''
         adjust category
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/category/{categoryTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -337,6 +412,14 @@ class categoryDetailApiList(Resource):
         '''
         delete category
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/category/{categoryTag}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
@@ -367,6 +450,14 @@ class originApiList(Resource):
         '''
         post origin
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/origin", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -383,6 +474,14 @@ class originDetailApiList(Resource):
         '''
         adjust origin
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/origin/{originName}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -394,6 +493,14 @@ class originDetailApiList(Resource):
         '''
         delete origin
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/origin/{originName}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
@@ -424,6 +531,14 @@ class supplierApiList(Resource):
         '''
         post supplier
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/supplier", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -440,6 +555,14 @@ class supplierDetailApiList(Resource):
         '''
         adjust supplier
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/supplier/{supplierTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -451,6 +574,14 @@ class supplierDetailApiList(Resource):
         '''
         delete supplier
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/supplier/{supplierTag}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
@@ -481,6 +612,14 @@ class sellerApiList(Resource):
         '''
         post seller
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/seller", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -497,6 +636,14 @@ class sellerDetailApiList(Resource):
         '''
         adjust seller
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/seller/{sellerTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -508,6 +655,14 @@ class sellerDetailApiList(Resource):
         '''
         delete seller
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/seller/{sellerTag}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code
@@ -536,6 +691,14 @@ class sellerDetailApiList(Resource):
         '''
         post seller cost
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/seller/{sellerTag}/cost", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -565,6 +728,14 @@ class officeApiList(Resource):
         '''
         post office
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.post(f"http://{management_url}/office", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -581,6 +752,14 @@ class officeDetailApiList(Resource):
         '''
         adjust office
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         request_body = json.loads(flask.request.get_data(), encoding='utf-8')
         res = requests.put(f"http://{management_url}/office/{officeTag}", data=json.dumps(request_body), timeout=3)
         result = json.loads(res.text)
@@ -592,6 +771,14 @@ class officeDetailApiList(Resource):
         '''
         delete office
         '''
+        mysql_cursor, connect_code = connect_mysql()
+        id = get_jwt_identity()
+        query = f"SELECT authority_id FROM user where user_id = '{id}';"
+        mysql_cursor.execute(query)
+        a_id_row = mysql_cursor.fetchone()
+        a_id = a_id_row[0]
+        if a_id != 'admin':
+            return 'Not Authirity Id', 400
         res = requests.delete(f"http://{management_url}/office/{officeTag}", timeout=3)
         if res.status_code == 204:
             return None, res.status_code

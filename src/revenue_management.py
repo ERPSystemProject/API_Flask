@@ -100,15 +100,15 @@ def revenueList():
             if 'startDate' in params:
                 startDate = params['startDate']
                 if condition_query:
-                    condition_query = condition_query + f" and goods.sale_date >= '{startDate}'"
+                    condition_query = condition_query + f" and goods_sale.sale_date >= '{startDate}'"
                 else:
-                    condition_query = f"WHERE goods.sale_date >= '{startDate}'"
+                    condition_query = f"WHERE goods_sale.sale_date >= '{startDate}'"
             if 'endDate' in params:
                 endDate = params['endDate']
                 if condition_query:
-                    condition_query = condition_query + f" and goods.sale_date <= '{endDate}'"
+                    condition_query = condition_query + f" and goods_sale.sale_date <= '{endDate}'"
                 else:
-                   condition_query = f"WHERE goods.sale_date <= '{endDate}'"
+                   condition_query = f"WHERE goods_sale.sale_date <= '{endDate}'"
 
             if 'officeTagList' in params:
                 officeTags = request.args.getlist('officeTagList')
@@ -128,6 +128,7 @@ def revenueList():
             query = f"SELECT (SELECT office_name FROM office WHERE office.office_tag = goods.office_tag), DATE_FORMAT(goods.sale_date,{date_format}) date, count(*), SUM(goods.first_cost), SUM(goods_sale.cost), SUM(goods_sale.cost*(goods_sale.commission_rate/100)) FROM goods, goods_sale " + condition_query + group_query + limit_query + ';'
             mysql_cursor.execute(query)
             rows = mysql_cursor.fetchall()
+            print(query)
 
             send_data['table'] = dict()
             send_data['table']['column'] = ['번호','영업소명','날짜','판매총계','원가총계','매출통계','수수료합계','순매출통계','마진합계','마진율(매출)','마진율(원가)']
@@ -222,7 +223,7 @@ def revenueGoodsList():
                 elif dateType == 1:
                     dateString = 'import_date'
                 else:
-                    dateString = 'sale_date'
+                    dateString = 'goods_sale.sale_date'
                 if 'startDate' in params:
                     startDate = params['startDate']
                     if condition_query:
@@ -417,7 +418,7 @@ def revenueGoodsList():
             goods_rows = mysql_cursor.fetchall()
 
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','판매일','입고일','입력방식','판매유형','판매처','상품상태','영업소','시즌','이미지','브랜드','상품종류','품번','Tag_no','공급처유형','공급처','성별','색상','소재','사이즈', '원산지', 'COST', '원가', '정상판매가', '실제판매가', '판매가','특별할인가', '할인금액', '할인률', '수수료', '수수료율', '정산액', '마진', '마진율(매출)', '마진율(원가)', '판매처리자', '메모', '재고일수']
+            send_data['table']['column'] = ['검색 번호','판매일','입고일','입력방식','판매유형','판매처','상품상태','영업처','시즌','이미지','브랜드','상품종류','품번','Tag_no','공급처유형','공급처','성별','색상','소재','사이즈', '원산지', 'COST', '원가', '정상판매가', '실제판매가', '판매가','특별할인가', '할인금액', '할인률', '수수료', '수수료율', '정산액', '마진', '마진율(매출)', '마진율(원가)', '판매처리자', '메모', '재고일수']
             send_data['table']['rows'] = list()
 
             for index, goods_row in enumerate(goods_rows):

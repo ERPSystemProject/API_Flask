@@ -63,6 +63,12 @@ def saleList():
     if flask.request.method == 'GET':
         try:
             params = request.args.to_dict()
+            user_id = params['userId']
+            query = f"SELECT authority_id, office_tag FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            user_row = mysql_cursor.fetchone()
+            a_id = user_row[0]
+            user_office = user_row[1]
             if not 'limit' in params:
                 send_data = {"result": "한 페이지당 몇개의 게시물을 표시할지 지정하지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -77,7 +83,10 @@ def saleList():
             start = (int(page)-1) * int(limit)
 
             limit_query = f" limit {start}, {limit};"
-            condition_query = " WHERE goods.status = 4"
+            if a_id == 'manager':
+                condition_query = f" WHERE goods.status = 4 and goods.office = {user_office}"
+            else:
+                condition_query = " WHERE goods.status = 4"
 
             if 'dateType' in params:
                 dateType = int(params['dateType'])
@@ -240,7 +249,7 @@ def saleList():
             goods_rows = mysql_cursor.fetchall()
 
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','영업소','COST','원가','정상판매가','판매가','특별할인가','상품상태']
+            send_data['table']['column'] = ['검색 번호','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','영업처','COST','원가','정상판매가','판매가','특별할인가','상품상태']
             send_data['table']['rows'] = list()
 
             for index, goods_row in enumerate(goods_rows):
@@ -345,6 +354,12 @@ def soldList():
     if flask.request.method == 'GET':
         try:
             params = request.args.to_dict()
+            user_id = params['userId']
+            query = f"SELECT authority_id, office_tag FROM user where user_id = '{user_id}';"
+            mysql_cursor.execute(query)
+            user_row = mysql_cursor.fetchone()
+            a_id = user_row[0]
+            user_office = user_row[1]
             if not 'limit' in params:
                 send_data = {"result": "한 페이지당 몇개의 게시물을 표시할지 지정하지 않았습니다."}
                 status_code = status.HTTP_400_BAD_REQUEST
@@ -359,7 +374,10 @@ def soldList():
             start = (int(page)-1) * int(limit)
 
             limit_query = f" limit {start}, {limit};"
-            condition_query = " WHERE goods.goods_tag = goods_sale.goods_tag and goods.status = 11"
+            if a_id == 'manager':
+                condition_query = f" WHERE goods.goods_tag = goods_sale.goods_tag and goods.status = 11 and goods.office = {user_office}"
+            else:
+                condition_query = " WHERE goods.goods_tag = goods_sale.goods_tag and goods.status = 11"
 
             if 'dateType' in params:
                 dateType = int(params['dateType'])
@@ -624,7 +642,7 @@ def soldList():
             goods_rows = mysql_cursor.fetchall()
 
             send_data['table'] = dict()
-            send_data['table']['column'] = ['검색 번호','판매등록일','상품상태','영업소','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','COST','원가','정상판매가','판매가','특별할인가','실판매가','매출마진액','정산액','할인율','매출마진%','원가마진%','수수료율','판매유형','판매처','수수료','주문번호','송장번호','받는사람','받는사람연락처','받는사람주소','메모','고객명','판매처리자','입력방식']
+            send_data['table']['column'] = ['검색 번호','판매등록일','상품상태','영업처','입고일','수입일','공급처유형','공급처','BL번호','시즌','이미지','브랜드','상품종류','품번','Tag_no','성별','색상','소재','사이즈','원산지','COST','원가','정상판매가','판매가','특별할인가','실판매가','매출마진액','정산액','할인율','매출마진%','원가마진%','수수료율','판매유형','판매처','수수료','주문번호','송장번호','받는사람','받는사람연락처','받는사람주소','메모','고객명','판매처리자','입력방식']
             send_data['table']['rows'] = list()
 
             for index, goods_row in enumerate(goods_rows):
@@ -652,6 +670,7 @@ def soldList():
                 data.append(goods_row[8])
                 data.append(goods_row[9])
                 data.append(goods_row[10])
+                data.append(goods_row[11])
                 
                 sex = goods_row[12]
                 if sex == 0:
@@ -763,7 +782,7 @@ def soldList():
             send_data['totalResult'] = int(count_row[0])
 
         except Exception as e:
-            send_data = {"result": f"Error : {e}"}
+            send_data = {"result": f"Error : {traceback.format_exc()}"}
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         finally:
             return flask.make_response(flask.jsonify(send_data), status_code)
@@ -833,6 +852,11 @@ def registerSaleList(goodsTag):
             register_type = request_body['registerType']
             sale_date = request_body['saleDate']
             cost = request_body['cost']
+            if cost < 1:
+                send_data = {"result": "판매가는 0이 될 수 없습니다"}
+                status_code = status.HTTP_400_BAD_REQUEST
+                return flask.make_response(flask.jsonify(send_data), status_code)
+
             commission_rate = request_body['commissionRate']
             seller_tag = request_body['sellerTag']
             customer = request_body['customerName']
@@ -913,12 +937,18 @@ def returnSaleList(goodsTag):
             else:
                 index = index_row[0] + 1
 
-            query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date "
+            query = f"INSERT INTO goods_history(goods_tag, goods_history_index, name, status, update_method, user_id, update_date) "
             query += f"VALUES ('{goodsTag}',{index},'반품처리',4,{register_type},'{user_id}',CURRENT_TIMESTAMP);"
+            mysql_cursor.execute(query)
+
+            query = f"DELETE FROM goods_sale WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
 
             query = f"UPDATE goods SET goods.status = 4, sale_date = NULL, return_date = CURRENT_TIMESTAMP WHERE goods_tag = '{goodsTag}';"
             mysql_cursor.execute(query)
+
+            send_data['result'] = 'SUCCESS'
+            send_data['tag'] = goodsTag
 
         except Exception as e:
             send_data = {"result": f"Error : {e}"}
